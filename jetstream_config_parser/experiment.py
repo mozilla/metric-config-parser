@@ -1,19 +1,17 @@
 import datetime as dt
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 
 import attr
 import jinja2
 import pytz
 from jinja2 import StrictUndefined
 
-from jetstream_config_parser.config import ConfigCollection
+if TYPE_CHECKING:
+    from .config import ConfigCollection
+    from .analysis import AnalysisSpec
 
-from .analysis import AnalysisSpec
 from .errors import NoStartDateException
-from .exposure_signal import (
-    ExposureSignal,
-    ExposureSignalDefinition,
-)
+from .exposure_signal import ExposureSignal, ExposureSignalDefinition
 from .segment import Segment, SegmentReference
 
 
@@ -180,7 +178,7 @@ class ExperimentSpec:
         return dt.datetime.strptime(yyyy_mm_dd, "%Y-%m-%d").replace(tzinfo=pytz.utc)
 
     def resolve(
-        self, spec: AnalysisSpec, experiment: Experiment, configs: Optional[ConfigCollection]
+        self, spec: "AnalysisSpec", experiment: Experiment, configs: Optional["ConfigCollection"]
     ) -> ExperimentConfiguration:
         experiment = ExperimentConfiguration(self, experiment, [])
         # Segment data sources may need to know the enrollment dates of the experiment,

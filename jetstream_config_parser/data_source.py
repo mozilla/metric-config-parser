@@ -1,11 +1,12 @@
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import attr
 
-from jetstream_config_parser.config import ConfigCollection
+if TYPE_CHECKING:
+    from jetstream_config_parser.config import ConfigCollection
+    from .analysis import AnalysisSpec
+    from .experiment import ExperimentConfiguration
 
-from .analysis import AnalysisSpec
-from .experiment import ExperimentConfiguration
 from .util import converter
 
 
@@ -88,11 +89,19 @@ class DataSourceReference:
     name: str
 
     def resolve(
-        self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration", config: ConfigCollection
+        self,
+        spec: "AnalysisSpec",
+        experiment: "ExperimentConfiguration",
+        configs: "ConfigCollection",
     ) -> DataSource:
-        data_source_definition = config.get_data_source_definition(
+        if self.name in spec.data_sources.definitions:
+            return spec.data_sources.definitions[self.name].resolve(spec)
+
+        data_source_definition = configs.get_data_source_definition(
             self.name, experiment.experiment.app_name
         )
+        if data_source_definition is None:
+            raise ValueError(f"No default definition for data source '{self.name}' found")
         return data_source_definition.resolve(spec)
 
 

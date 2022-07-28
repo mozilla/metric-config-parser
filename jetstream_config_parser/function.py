@@ -1,3 +1,4 @@
+from functools import partial
 from typing import Any, Callable, Dict, Mapping
 
 import attr
@@ -18,7 +19,15 @@ class FunctionsSpec:
         return cls(
             {
                 slug: Function(
-                    slug=slug, definition=lambda select_expr: fun["definition"].format(select_expr)
+                    slug=slug,
+                    definition=(
+                        partial(
+                            lambda select_expr, definition: definition.format(
+                                select_expr=select_expr
+                            ),
+                            definition=fun["definition"],
+                        )
+                    ),
                 )
                 for slug, fun in d["functions"].items()
             }

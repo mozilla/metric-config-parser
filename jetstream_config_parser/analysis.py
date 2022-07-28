@@ -1,17 +1,17 @@
-from typing import Any, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Mapping
 
 import attr
-import cattr
 
-from .config import ConfigCollection
+if TYPE_CHECKING:
+    from .config import ConfigCollection
+
 from .data_source import DataSourcesSpec
 from .experiment import Experiment, ExperimentConfiguration, ExperimentSpec
 from .metric import MetricReference, MetricsConfigurationType, MetricsSpec
 from .outcome import OutcomeSpec
 from .parameter import ParameterDefinition, ParameterSpec
 from .segment import SegmentsSpec
-
-_converter = cattr.Converter()
+from .util import converter
 
 
 @attr.s(auto_attribs=True)
@@ -43,11 +43,11 @@ class AnalysisSpec:
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "AnalysisSpec":
-        return _converter.structure(d, cls)
+        return converter.structure(d, cls)
 
     @classmethod
     def default_for_experiment(
-        cls, experiment: "Experiment", configs: ConfigCollection
+        cls, experiment: "Experiment", configs: "ConfigCollection"
     ) -> "AnalysisSpec":
         """Return the default spec based on the experiment type."""
         default_metrics = configs.get_platform_defaults(experiment.app_name)
@@ -63,14 +63,13 @@ class AnalysisSpec:
         return default_metrics
 
     def resolve(
-        self, experiment: "Experiment", configs: Optional[ConfigCollection] = None,
+        self,
+        experiment: "Experiment",
+        configs: "ConfigCollection",
     ) -> AnalysisConfiguration:
         if self._resolved:
             raise Exception("Can't resolve an AnalysisSpec twice")
         self._resolved = True
-
-        if len(experiment.outcomes) > 0 and configs is None:
-            raise Exception("No outcome definitions available")
 
         for slug in experiment.outcomes:
             outcome = configs.spec_for_outcome(slug, experiment.app_name)

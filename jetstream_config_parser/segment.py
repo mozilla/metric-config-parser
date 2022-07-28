@@ -1,13 +1,14 @@
-from typing import Dict, Optional
+from typing import TYPE_CHECKING, Dict, Optional
 
 import attr
 import jinja2
 from jinja2 import StrictUndefined
 
-from jetstream_config_parser.config import ConfigCollection
+if TYPE_CHECKING:
+    from .config import ConfigCollection
+    from .analysis import AnalysisSpec
+    from .experiment import ExperimentConfiguration
 
-from .analysis import AnalysisSpec
-from .experiment import ExperimentConfiguration
 from .util import converter
 
 
@@ -57,8 +58,8 @@ class Segment:
     Args:
         name (str): The segment's name; will be a column name.
         data_source (SegmentDataSource): Data source that provides
-            the columns referenced in ``select_expr``.
-        select_expr (str): A SQL select expression that includes
+            the columns referenced in ``select_expression``.
+        select_expression (str): A SQL select expression that includes
             an aggregation function (we ``GROUP BY client_id``).
             Returns a non-NULL ``BOOL``: ``True`` if the user is in the
             segment, ``False`` otherwise.
@@ -69,7 +70,7 @@ class Segment:
 
     name = attr.ib(type=str)
     data_source = attr.ib(validator=attr.validators.instance_of(SegmentDataSource))
-    select_expr = attr.ib(type=str)
+    select_expression = attr.ib(type=str)
     friendly_name = attr.ib(type=Optional[str], default=None)
     description = attr.ib(type=Optional[str], default=None)
 
@@ -79,8 +80,13 @@ class SegmentReference:
     name: str
 
     def resolve(
-        self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration", configs: ConfigCollection
+        self,
+        spec: "AnalysisSpec",
+        experiment: "ExperimentConfiguration",
+        configs: "ConfigCollection",
     ) -> Segment:
+        if self.name in spec.segments.definitions:
+            return spec.segments.definitions[self.name].resolve(spec, experiment, configs)
         segment_definition = configs.get_segment_definition(self.name, experiment.app_name)
         return segment_definition.resolve(spec, experiment, configs)
 
@@ -98,7 +104,10 @@ class SegmentDataSourceDefinition:
     submission_date_column: Optional[str] = None
 
     def resolve(
-        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration, _configs: ConfigCollection
+        self,
+        spec: "AnalysisSpec",
+        experiment: "ExperimentConfiguration",
+        _configs: "ConfigCollection",
     ) -> SegmentDataSource:
         env = jinja2.Environment(autoescape=False, undefined=StrictUndefined)
         from_expr = env.from_string(self.from_expression).render(experiment=experiment)
@@ -119,9 +128,16 @@ class SegmentDataSourceReference:
     name: str
 
     def resolve(
-        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration, configs: ConfigCollection
+        self,
+        spec: "AnalysisSpec",
+        experiment: "ExperimentConfiguration",
+        configs: "ConfigCollection",
     ) -> SegmentDataSource:
-        segment_definition = configs.get_segment_definition(self.name, experiment.app_name)
+        if self.name in spec.segments.data_sources:
+            return spec.segments.data_sources[self.name].resolve(spec, experiment, configs)
+        segment_definition = configs.get_segment_data_source_definition(
+            self.name, experiment.app_name
+        )
         return segment_definition.resolve(spec, experiment, configs)
 
 
@@ -139,14 +155,17 @@ class SegmentDefinition:
     description: Optional[str] = None
 
     def resolve(
-        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration, configs: ConfigCollection
+        self,
+        spec: "AnalysisSpec",
+        experiment: "ExperimentConfiguration",
+        configs: "ConfigCollection",
     ) -> Segment:
         data_source = self.data_source.resolve(spec, experiment, configs)
 
         return Segment(
             name=self.name,
             data_source=data_source,
-            select_expr=configs.get_env().from_string(self.select_expression).render(),
+            select_expression=configs.get_env().from_string(self.select_expression).render(),
             friendly_name=self.friendly_name,
             description=self.description,
         )

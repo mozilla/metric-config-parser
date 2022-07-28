@@ -5,5 +5,5 @@ import attr
 
 @attr.s(auto_attribs=True)
 class Statistic:
-    slug: str
+    name: str
     params: Dict[str, Any]

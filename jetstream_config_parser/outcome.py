@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Mapping, Optional
 
 import attr
-from data_source import DataSourcesSpec
 
+from .data_source import DataSourcesSpec
 from .metric import MetricDefinition, MetricReference
 from .parameter import ParameterSpec
 from .util import converter

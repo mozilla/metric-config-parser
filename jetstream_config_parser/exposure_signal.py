@@ -1,13 +1,14 @@
 import enum
-from typing import Any, Type, Union
+from typing import TYPE_CHECKING, Any, Type, Union
 
 import attr
 
-from jetstream_config_parser.config import ConfigCollection
+if TYPE_CHECKING:
+    from .config import ConfigCollection
+    from .analysis import AnalysisSpec
+    from .experiment import ExperimentConfiguration
 
-from .analysis import AnalysisSpec
 from .data_source import DataSource, DataSourceReference
-from .experiment import ExperimentConfiguration
 from .util import converter
 
 
@@ -73,7 +74,10 @@ class ExposureSignalDefinition:
     window_end: WindowLimit = None
 
     def resolve(
-        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration, configs: ConfigCollection
+        self,
+        spec: "AnalysisSpec",
+        experiment: "ExperimentConfiguration",
+        configs: "ConfigCollection",
     ) -> ExposureSignal:
         return ExposureSignal(
             name=self.name,

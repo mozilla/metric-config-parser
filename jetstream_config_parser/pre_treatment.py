@@ -1,8 +1,9 @@
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any, Dict
 
 import attr
 
-from .analysis import AnalysisSpec
+if TYPE_CHECKING:
+    from .analysis import AnalysisSpec
 
 
 @attr.s(auto_attribs=True)

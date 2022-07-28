@@ -1,16 +1,17 @@
 import copy
 from collections import defaultdict
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import attr
 import jinja2
 
-from .analysis import AnalysisSpec
-from .config import ConfigCollection
-from .data_source import DataSourceReference
-from .experiment import ExperimentConfiguration
-from .metric import Metric
+if TYPE_CHECKING:
+    from .analysis import AnalysisSpec
+    from .config import ConfigCollection
+    from .experiment import ExperimentConfiguration
+
+from .data_source import DataSource, DataSourceReference
 from .parameter import ParameterDefinition
 from .pre_treatment import PreTreatmentReference
 from .statistic import Statistic
@@ -50,19 +51,40 @@ class Summary:
     pre_treatments: List[PreTreatmentReference] = attr.Factory(list)
 
 
+@attr.s(auto_attribs=True, frozen=True, slots=True)
+class Metric:
+    """
+    Jetstream metric representation.
+
+    Jetstream metrics are supersets of mozanalysis metrics with additional
+    metadata required for analysis.
+    """
+
+    name: str
+    data_source: DataSource
+    select_expression: str
+    friendly_name: Optional[str] = None
+    description: Optional[str] = None
+    bigger_is_better: bool = True
+    analysis_bases: List[AnalysisBasis] = [AnalysisBasis.ENROLLMENTS]
+
+
 @attr.s(auto_attribs=True)
 class MetricReference:
     name: str
 
     def resolve(
-        self, spec: "AnalysisSpec", experiment: "ExperimentConfiguration", configs: ConfigCollection
+        self,
+        spec: "AnalysisSpec",
+        experiment: "ExperimentConfiguration",
+        configs: "ConfigCollection",
     ) -> List[Summary]:
         if self.name in spec.metrics.definitions:
             return spec.metrics.definitions[self.name].resolve(spec, experiment, configs)
 
         metric_definition = configs.get_metric_definition(self.name, experiment.experiment.app_name)
         if metric_definition:
-            metric_definition.resolve(spec, experiment, configs=configs)
+            return metric_definition.resolve(spec, experiment, configs=configs)
 
         raise ValueError(f"Could not locate metric {self.name}")
 
@@ -81,7 +103,7 @@ class MetricDefinition:
     """
 
     name: str  # implicit in configuration
-    statistics: Dict[str, Dict[str, Any]]
+    statistics: Optional[Dict[str, Dict[str, Any]]] = None
     select_expression: Optional[str] = None
     data_source: Optional[DataSourceReference] = None
     friendly_name: Optional[str] = None
@@ -93,7 +115,7 @@ class MetricDefinition:
     def generate_select_expression(
         param_definitions: Dict[str, ParameterDefinition],
         select_expr_template: Union[str, jinja2.nodes.Template],
-        configs: Optional[ConfigCollection] = None,
+        configs: "ConfigCollection",
     ) -> str:
         """
         Takes in param configuration and converts it to a select statement string
@@ -128,9 +150,12 @@ class MetricDefinition:
     def resolve(
         self,
         spec: "AnalysisSpec",
-        experiment: ExperimentConfiguration,
-        configs: Optional[ConfigCollection] = None,
+        experiment: "ExperimentConfiguration",
+        configs: "ConfigCollection",
     ) -> List[Summary]:
+        metric_summary = None
+        metric = None
+
         if self.select_expression is None or self.data_source is None:
             # checks if a metric from mozanalysis was referenced
             metric_definition = configs.get_metric_definition(
@@ -140,7 +165,8 @@ class MetricDefinition:
             if metric_definition is None:
                 raise Exception(f"No default definition found for referenced metric {self.name}")
 
-            metric = metric_definition.resolve(spec, experiment, configs)
+            metric_definition.analysis_bases = self.analysis_bases or [AnalysisBasis.ENROLLMENTS]
+            metric_summary = metric_definition.resolve(spec, experiment, configs)
         else:
             select_expression = self.generate_select_expression(
                 spec.parameters.definitions,
@@ -160,24 +186,50 @@ class MetricDefinition:
 
         metrics_with_treatments = []
 
-        for statistic_name, params in self.statistics.items():
-            stats_params = copy.deepcopy(params)
-            pre_treatments = []
-            for pt in stats_params.pop("pre_treatments", []):
-                if isinstance(pt, str):
-                    ref = PreTreatmentReference(pt, {})
-                else:
-                    name = pt.pop("name")
-                    ref = PreTreatmentReference(name, pt)
-                pre_treatments.append(ref.resolve(spec))
+        if metric_summary:
+            if self.statistics:
+                for statistic_name, params in self.statistics.items():
+                    stats_params = copy.deepcopy(params)
+                    pre_treatments = []
+                    for pt in stats_params.pop("pre_treatments", []):
+                        if isinstance(pt, str):
+                            ref = PreTreatmentReference(pt, {})
+                        else:
+                            name = pt.pop("name")
+                            ref = PreTreatmentReference(name, pt)
+                        pre_treatments.append(ref.resolve(spec))
 
-            metrics_with_treatments.append(
-                Summary(
-                    metric=metric,
-                    statistic=Statistic(statistic_name, stats_params),
-                    pre_treatments=pre_treatments,
+                    metrics_with_treatments.append(
+                        Summary(
+                            metric=metric_summary[0].metric,
+                            statistic=Statistic(statistic_name, stats_params),
+                            pre_treatments=pre_treatments,
+                        )
+                    )
+            else:
+                metrics_with_treatments += metric_summary
+        else:
+            if self.statistics is None:
+                raise (f"No statistical treatment defined for metric '{self.name}'")
+
+            for statistic_name, params in self.statistics.items():
+                stats_params = copy.deepcopy(params)
+                pre_treatments = []
+                for pt in stats_params.pop("pre_treatments", []):
+                    if isinstance(pt, str):
+                        ref = PreTreatmentReference(pt, {})
+                    else:
+                        name = pt.pop("name")
+                        ref = PreTreatmentReference(name, pt)
+                    pre_treatments.append(ref.resolve(spec))
+
+                metrics_with_treatments.append(
+                    Summary(
+                        metric=metric,
+                        statistic=Statistic(statistic_name, stats_params),
+                        pre_treatments=pre_treatments,
+                    )
                 )
-            )
 
         if len(metrics_with_treatments) == 0:
             raise ValueError(f"Metric {self.name} has no statistical treatment defined.")
@@ -222,7 +274,10 @@ class MetricsSpec:
         return cls(**params)
 
     def resolve(
-        self, spec: "AnalysisSpec", experiment: ExperimentConfiguration, configs: ConfigCollection
+        self,
+        spec: "AnalysisSpec",
+        experiment: "ExperimentConfiguration",
+        configs: "ConfigCollection",
     ) -> MetricsConfigurationType:
         result = {}
         for period in AnalysisPeriod:

@@ -295,9 +295,9 @@ class ConfigCollection:
         return None
 
     def get_metric_definition(self, slug: str, app_name: str) -> Optional[MetricDefinition]:
-        for default in self.defaults:
-            if app_name == default.platform:
-                for metric_slug, metric in default.spec.metrics.definitions.items():
+        for definition in self.definitions:
+            if app_name == definition.platform:
+                for metric_slug, metric in definition.spec.metrics.definitions.items():
                     if metric_slug == slug:
                         return metric
 
@@ -306,9 +306,12 @@ class ConfigCollection:
     def get_data_source_definition(
         self, slug: str, app_name: str
     ) -> Optional[DataSourceDefinition]:
-        for default in self.defaults:
-            if app_name == default.platform:
-                for data_source_slug, data_source in default.spec.data_sources.items():
+        for definition in self.definitions:
+            if app_name == definition.platform:
+                for (
+                    data_source_slug,
+                    data_source,
+                ) in definition.spec.data_sources.definitions.items():
                     if data_source_slug == slug:
                         return data_source
         return None
@@ -316,25 +319,25 @@ class ConfigCollection:
     def get_segment_data_source_definition(
         self, slug: str, app_name: str
     ) -> Optional[SegmentDataSourceDefinition]:
-        for default in self.defaults:
-            if app_name == default.platform:
+        for definition in self.definitions:
+            if app_name == definition.platform:
                 for (
                     segment_source_slug,
                     segment_source,
-                ) in default.spec.segments.data_sources.items():
+                ) in definition.spec.segments.data_sources.items():
                     if segment_source_slug == slug:
                         return segment_source
 
         return None
 
     def get_segment_definition(self, slug: str, app_name: str) -> Optional[SegmentDefinition]:
-        for default in self.defaults:
-            if app_name == default.platform:
-                for segment_slug, segment in default.spec.segments.definitions.items():
+        for definition in self.definitions:
+            if app_name == definition.platform:
+                for segment_slug, segment in definition.spec.segments.definitions.items():
                     if segment_slug == slug:
                         return segment
 
-        return segment
+        return None
 
     def get_env(self) -> jinja2.Environment:
         """Create a Jinja2 environment that understands the SQL agg_* helpers in mozanalysis.metrics.
@@ -342,7 +345,7 @@ class ConfigCollection:
         Just a wrapper to avoid leaking temporary variables to the module scope."""
         env = jinja2.Environment(autoescape=False, undefined=StrictUndefined)
         if self.functions is not None:
-            for slug, function in self.functions.items():
-                env.globals[slug] = function
+            for slug, function in self.functions.functions.items():
+                env.globals[slug] = function.definition
 
         return env
