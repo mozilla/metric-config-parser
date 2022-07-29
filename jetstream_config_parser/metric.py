@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 import attr
 import jinja2
 
+from jetstream_config_parser.errors import DefinitionNotFound
+
 if TYPE_CHECKING:
     from .analysis import AnalysisSpec
     from .config import ConfigCollection
@@ -86,7 +88,7 @@ class MetricReference:
         if metric_definition:
             return metric_definition.resolve(spec, experiment, configs=configs)
 
-        raise ValueError(f"Could not locate metric {self.name}")
+        raise DefinitionNotFound(f"Could not locate metric {self.name}")
 
 
 # These are bare strings in the configuration file.
@@ -163,7 +165,9 @@ class MetricDefinition:
             )
 
             if metric_definition is None:
-                raise Exception(f"No default definition found for referenced metric {self.name}")
+                raise DefinitionNotFound(
+                    f"No default definition found for referenced metric {self.name}"
+                )
 
             metric_definition.analysis_bases = self.analysis_bases or [AnalysisBasis.ENROLLMENTS]
             metric_summary = metric_definition.resolve(spec, experiment, configs)
@@ -208,9 +212,9 @@ class MetricDefinition:
                     )
             else:
                 metrics_with_treatments += metric_summary
-        else:
+        elif metric:
             if self.statistics is None:
-                raise (f"No statistical treatment defined for metric '{self.name}'")
+                raise ValueError(f"No statistical treatment defined for metric '{self.name}'")
 
             for statistic_name, params in self.statistics.items():
                 stats_params = copy.deepcopy(params)

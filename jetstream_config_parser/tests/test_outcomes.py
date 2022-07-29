@@ -1,14 +1,14 @@
-from textwrap import dedent
 import datetime as dt
+from textwrap import dedent
 
-import pytz
 import pytest
+import pytz
 import toml
 
-from jetstream_config_parser.outcome import OutcomeSpec
 from jetstream_config_parser.analysis import AnalysisSpec
-from jetstream_config_parser.metric import AnalysisPeriod
 from jetstream_config_parser.experiment import Experiment
+from jetstream_config_parser.metric import AnalysisPeriod
+from jetstream_config_parser.outcome import OutcomeSpec
 
 
 class TestOutcomes:

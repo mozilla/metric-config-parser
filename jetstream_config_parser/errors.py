@@ -12,6 +12,13 @@ class InvalidConfigurationException(Exception):
         super().__init__(message)
 
 
+class DefinitionNotFound(Exception):
+    """Exception thrown when a definition for a provided reference does not exist."""
+
+    def __init__(self, message):
+        super().__init__(message)
+
+
 class UnexpectedKeyConfigurationException(InvalidConfigurationException):
     pass
 

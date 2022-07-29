@@ -1,7 +1,7 @@
 import pytest
 
-from jetstream_config_parser.parameter import ParameterDefinition
 from jetstream_config_parser.metric import MetricDefinition
+from jetstream_config_parser.parameter import ParameterDefinition
 
 
 class TestMetricDefinition:

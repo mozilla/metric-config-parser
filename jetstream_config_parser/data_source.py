@@ -2,6 +2,8 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import attr
 
+from jetstream_config_parser.errors import DefinitionNotFound
+
 if TYPE_CHECKING:
     from jetstream_config_parser.config import ConfigCollection
     from .analysis import AnalysisSpec
@@ -101,7 +103,7 @@ class DataSourceReference:
             self.name, experiment.experiment.app_name
         )
         if data_source_definition is None:
-            raise ValueError(f"No default definition for data source '{self.name}' found")
+            raise DefinitionNotFound(f"No default definition for data source '{self.name}' found")
         return data_source_definition.resolve(spec)
 
 

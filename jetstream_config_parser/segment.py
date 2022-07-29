@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import attr
 import jinja2
@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from .analysis import AnalysisSpec
     from .experiment import ExperimentConfiguration
 
+from .errors import DefinitionNotFound
 from .util import converter
 
 
@@ -88,6 +89,8 @@ class SegmentReference:
         if self.name in spec.segments.definitions:
             return spec.segments.definitions[self.name].resolve(spec, experiment, configs)
         segment_definition = configs.get_segment_definition(self.name, experiment.app_name)
+        if segment_definition is None:
+            raise DefinitionNotFound(f"Could not find definition for segment '{self.name}'")
         return segment_definition.resolve(spec, experiment, configs)
 
 
@@ -111,7 +114,7 @@ class SegmentDataSourceDefinition:
     ) -> SegmentDataSource:
         env = jinja2.Environment(autoescape=False, undefined=StrictUndefined)
         from_expr = env.from_string(self.from_expression).render(experiment=experiment)
-        kwargs = {
+        kwargs: Dict[str, Any] = {
             "name": self.name,
             "from_expr": from_expr,
             "window_start": self.window_start,
@@ -138,6 +141,10 @@ class SegmentDataSourceReference:
         segment_definition = configs.get_segment_data_source_definition(
             self.name, experiment.app_name
         )
+        if segment_definition is None:
+            raise DefinitionNotFound(
+                f"Could not find definition for segment data source '{self.name}'"
+            )
         return segment_definition.resolve(spec, experiment, configs)
 
 

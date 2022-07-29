@@ -58,7 +58,7 @@ class AnalysisSpec:
         type_metrics = configs.get_platform_defaults(experiment.type)
 
         if type_metrics is not None:
-            default_metrics.merge(type_metrics.spec)
+            default_metrics.merge(type_metrics)
 
         return default_metrics
 
@@ -83,10 +83,10 @@ class AnalysisSpec:
 
             self.merge_parameters(outcome.parameters)
 
-        experiment = self.experiment.resolve(self, experiment, configs)
-        metrics = self.metrics.resolve(self, experiment, configs)
+        resolved_experiment = self.experiment.resolve(self, experiment, configs)
+        metrics = self.metrics.resolve(self, resolved_experiment, configs)
 
-        return AnalysisConfiguration(experiment, metrics)
+        return AnalysisConfiguration(resolved_experiment, metrics)
 
     def merge(self, other: "AnalysisSpec"):
         """Merges another analysis spec into the current one."""

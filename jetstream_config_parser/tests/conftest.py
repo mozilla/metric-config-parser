@@ -1,6 +1,5 @@
 import datetime as dt
 from textwrap import dedent
-from jetstream_config_parser.outcome import OutcomeSpec
 
 import pytest
 import pytz
@@ -10,6 +9,7 @@ from jetstream_config_parser.analysis import AnalysisSpec
 from jetstream_config_parser.config import ConfigCollection, DefinitionConfig, Outcome
 from jetstream_config_parser.experiment import Branch, Experiment
 from jetstream_config_parser.function import FunctionsSpec
+from jetstream_config_parser.outcome import OutcomeSpec
 
 
 @pytest.fixture

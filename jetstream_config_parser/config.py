@@ -150,7 +150,7 @@ class DefinitionConfig(Config):
 
     platform: str
 
-    def validate(self, _experiment: Experiment = None) -> None:
+    def validate(self, configs: "ConfigCollection", _experiment: Experiment = None) -> None:
         # todo
         pass
 
@@ -180,6 +180,7 @@ def entity_from_path(path: Path) -> Union[Config, Outcome, DefaultConfig]:
             slug=slug,
             spec=AnalysisSpec.from_dict(config_dict),
             last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
+            platform=slug,
         )
     return Config(
         slug=slug,
@@ -208,7 +209,7 @@ class ConfigCollection:
         """Pull in external config files."""
         # download files to tmp directory
         with TemporaryDirectory() as tmp_dir:
-            repo = Repo.clone_from(cls.JETSTREAM_CONFIG_URL, tmp_dir)
+            repo = Repo.clone_from(cls.repo_url, tmp_dir)
 
             external_configs = []
 
@@ -289,8 +290,8 @@ class ConfigCollection:
 
     def get_platform_defaults(self, platform: str) -> Optional[AnalysisSpec]:
         for default in self.defaults:
-            if platform == default.platform:
-                return platform.spec
+            if platform == default.slug:
+                return default.spec
 
         return None
 

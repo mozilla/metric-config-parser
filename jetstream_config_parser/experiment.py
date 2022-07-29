@@ -178,19 +178,21 @@ class ExperimentSpec:
         return dt.datetime.strptime(yyyy_mm_dd, "%Y-%m-%d").replace(tzinfo=pytz.utc)
 
     def resolve(
-        self, spec: "AnalysisSpec", experiment: Experiment, configs: Optional["ConfigCollection"]
+        self, spec: "AnalysisSpec", experiment: Experiment, configs: "ConfigCollection"
     ) -> ExperimentConfiguration:
-        experiment = ExperimentConfiguration(self, experiment, [])
+        experiment_config = ExperimentConfiguration(self, experiment, [])
         # Segment data sources may need to know the enrollment dates of the experiment,
         # so we'll forward the Experiment we know about so far.
-        experiment.segments = [ref.resolve(spec, experiment, configs) for ref in self.segments]
+        experiment_config.segments = [
+            ref.resolve(spec, experiment_config, configs) for ref in self.segments
+        ]
 
         if self.exposure_signal:
-            experiment.exposure_signal = self.exposure_signal.resolve(
-                spec, experiment=experiment, configs=configs
+            experiment_config.exposure_signal = self.exposure_signal.resolve(
+                spec, experiment=experiment_config, configs=configs
             )
 
-        return experiment
+        return experiment_config
 
     def merge(self, other: "ExperimentSpec") -> None:
         for key in attr.fields_dict(type(self)):
