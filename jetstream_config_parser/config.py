@@ -354,7 +354,8 @@ class ConfigCollection:
         return None
 
     def get_env(self) -> jinja2.Environment:
-        """Create a Jinja2 environment that understands the SQL agg_* helpers in mozanalysis.metrics.
+        """
+        Create a Jinja2 environment that understands the SQL agg_* helpers in mozanalysis.metrics.
 
         Just a wrapper to avoid leaking temporary variables to the module scope."""
         env = jinja2.Environment(autoescape=False, undefined=StrictUndefined)
