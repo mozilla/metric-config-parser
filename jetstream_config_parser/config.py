@@ -151,8 +151,21 @@ class DefinitionConfig(Config):
     platform: str
 
     def validate(self, configs: "ConfigCollection", _experiment: Experiment = None) -> None:
-        # todo
-        pass
+        dummy_experiment = Experiment(
+            experimenter_slug="dummy-experiment",
+            normandy_slug="dummy_experiment",
+            type="v6",
+            status="Live",
+            branches=[],
+            end_date=None,
+            reference_branch="control",
+            is_high_population=False,
+            start_date=dt.datetime.now(UTC),
+            proposed_enrollment=14,
+            app_name=self.platform,
+        )
+
+        self.spec.resolve(dummy_experiment, configs)
 
 
 def entity_from_path(path: Path) -> Union[Config, Outcome, DefaultConfig]:
