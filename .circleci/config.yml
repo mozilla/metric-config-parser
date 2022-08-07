@@ -37,29 +37,9 @@ jobs:
         paths:
         - venv/
         key: *cache_key
-  integration:
-    docker:
-    - image: python:3.8
-    steps:
-    - checkout
-    - &skip_forked_pr
-      run:
-        name: Early return if this build is from a forked PR
-        command: |
-          if [ -n "$CIRCLE_PR_NUMBER" ]; then
-            echo "Cannot pass creds to forked PRs, so marking this step successful"
-            circleci step halt
-          fi
-    - &build
-      run:
-        name: Build
-        command: |
-          python3.8 -m venv venv/
-          venv/bin/pip install --progress-bar off --upgrade -r requirements.txt
 
 workflows:
   version: 2.1
   build-and-deploy:
     jobs:
       - build
-
