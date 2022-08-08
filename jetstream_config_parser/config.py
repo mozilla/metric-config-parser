@@ -275,7 +275,7 @@ class ConfigCollection:
                         definitions_config_file.stem,
                         AnalysisSpec.from_dict(toml.load(definitions_config_file)),
                         UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
-                        platform=definitions_config_file.parent.name,
+                        platform=definitions_config_file.stem,
                     )
                 )
 

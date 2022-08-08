@@ -43,11 +43,10 @@ jobs:
     steps:
     - checkout
     - *build
-    - integration_test:
-      run:
+    - run:
         name: PyTest Integration Test
         command: |
-          venv/bin/pytest --black --flake8 --integration jetstream_config_parser/tests/integration/
+          venv/bin/pytest --black --flake8 jetstream_config_parser/tests/integration/
   deploy:
     docker:
       - image: python:3.8-buster
@@ -75,6 +74,7 @@ workflows:
   build:
     jobs:
       - build
+      - integration
   tagged-deploy:
     jobs:
       - deploy:

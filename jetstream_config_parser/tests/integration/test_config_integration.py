@@ -12,3 +12,9 @@ class TestConfigIntegration:
             )
             is not None
         )
+        assert (
+            config_collection.get_data_source_definition("clients_daily", "firefox_desktop")
+            is not None
+        )
+        assert config_collection.get_metric_definition("baseline_ping_count", "fenix") is not None
+        assert config_collection.get_metric_definition("not_exist", "firefox_desktop") is None
