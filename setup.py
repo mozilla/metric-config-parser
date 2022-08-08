@@ -59,5 +59,5 @@ setup(
     long_description=text_from_file("README.md"),
     long_description_content_type="text/markdown",
     python_requires=">=3.6",
-    version="2022.8.1",
+    version="2022.8.5",
 )
