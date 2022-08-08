@@ -74,7 +74,8 @@ def validate_config_settings(config_file: Path) -> None:
     core_config_keys_specified = config.keys()
 
     # checks for unexpected core configuration keys
-    if unexpected_config_keys := (set(core_config_keys_specified) - set(optional_core_config_keys)):
+    unexpected_config_keys = set(core_config_keys_specified) - set(optional_core_config_keys)
+    if unexpected_config_keys:
         err_msg = (
             f"Unexpected config key[s] found: {unexpected_config_keys}. "
             f"config_file: {str(config_file).split('/')[-1]}"

@@ -18,3 +18,7 @@ class TestConfigIntegration:
         )
         assert config_collection.get_metric_definition("baseline_ping_count", "fenix") is not None
         assert config_collection.get_metric_definition("not_exist", "firefox_desktop") is None
+        assert (
+            config_collection.get_segment_definition("regular_users_v3", "firefox_desktop")
+            is not None
+        )

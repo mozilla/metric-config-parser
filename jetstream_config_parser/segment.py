@@ -122,7 +122,8 @@ class SegmentDataSourceDefinition:
             "window_end": self.window_end,
         }
         for k in ("client_id_column", "submission_date_column"):
-            if v := getattr(self, k):
+            v = getattr(self, k)
+            if v:
                 kwargs[k] = v
         return SegmentDataSource(**kwargs)
 
