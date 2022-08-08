@@ -121,6 +121,7 @@ class DataSourceDefinition:
     experiments_column_type: Optional[str] = None
     client_id_column: Optional[str] = None
     submission_date_column: Optional[str] = None
+    default_dataset: Optional[str] = None
 
     def resolve(self, spec: "AnalysisSpec") -> DataSource:
         params: Dict[str, Any] = {"name": self.name, "from_expr": self.from_expression}
