@@ -67,7 +67,7 @@ jobs:
             #   https://circleci.com/gh/mozilla/jetstream-config-parser/edit#env-vars
             # For more on twine, see:
             #   https://twine.readthedocs.io/en/latest/
-            twine upload dist/*
+            twine upload --skip-existing dist/*
 
 workflows:
   version: 2.1
