@@ -51,6 +51,7 @@ class Experiment:
     reference_branch: Optional[str]
     is_high_population: bool
     app_name: str
+    app_id: Optional[str] = None
     outcomes: List[str] = attr.Factory(list)
 
 

@@ -1,4 +1,5 @@
 import enum
+from textwrap import dedent
 from typing import TYPE_CHECKING, Any, Type, Union
 
 import attr
@@ -83,8 +84,8 @@ class ExposureSignalDefinition:
             name=self.name,
             data_source=self.data_source.resolve(spec, experiment=experiment, configs=configs),
             select_expression=self.select_expression,
-            friendly_name=self.friendly_name,
-            description=self.description,
+            friendly_name=dedent(self.friendly_name) if self.friendly_name else self.friendly_name,
+            description=dedent(self.description) if self.description else self.description,
             window_start=self.window_start,
             window_end=self.window_end,
         )

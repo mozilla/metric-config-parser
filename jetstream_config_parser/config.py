@@ -169,7 +169,7 @@ class DefinitionConfig(Config):
         self.spec.resolve(dummy_experiment, configs)
 
 
-def entity_from_path(path: Path) -> Union[Config, Outcome, DefaultConfig]:
+def entity_from_path(path: Path) -> Union[Config, Outcome, DefaultConfig, DefinitionConfig]:
     is_outcome = path.parent.parent.name == OUTCOMES_DIR
     is_default_config = path.parent.name == DEFAULTS_DIR
     is_definition_config = path.parent.name == DEFINITIONS_DIR

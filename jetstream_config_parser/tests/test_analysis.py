@@ -125,7 +125,7 @@ class TestAnalysisSpec:
             0
         ].metric
         assert spam.data_source.name == "eggs"
-        assert "camelot" in spam.data_source._from_expr
+        assert "camelot" in spam.data_source.from_expression
         assert "client_info" in spam.data_source.client_id_column
         assert spam.data_source.experiments_column_type == "simple"
         assert taunts.data_source.experiments_column_type is None
@@ -412,7 +412,7 @@ class TestAnalysisSpec:
 
         assert cfg.experiment.exposure_signal == ExposureSignal(
             name="ad_exposure",
-            data_source=DataSource(name="main", from_expr="SELECT 1"),
+            data_source=DataSource(name="main", from_expression="SELECT 1"),
             select_expression="ad_click > 0",
             friendly_name="Ad exposure",
             description="Clients have clicked on ad",
