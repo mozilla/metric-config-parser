@@ -1,3 +1,4 @@
+import copy
 from typing import TYPE_CHECKING, Any, Mapping
 
 import attr
@@ -60,7 +61,7 @@ class AnalysisSpec:
         if type_metrics is not None:
             default_metrics.merge(type_metrics)
 
-        return default_metrics
+        return copy.deepcopy(default_metrics)
 
     def resolve(
         self,

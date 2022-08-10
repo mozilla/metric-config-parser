@@ -4,5 +4,5 @@ This package parses [jetstream](https://github.com/mozilla/jetstream) compatible
 
 ## Installation
 
-`pip install jetstream-config-parser`
+`pip install mozilla-jetstream-config-parser`
 

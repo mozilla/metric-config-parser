@@ -18,7 +18,7 @@ class DataSource:
     Args:
         name (str): Name for the Data Source. Used in sanity metric
             column names.
-        from_expr (str): FROM expression - often just a fully-qualified
+        from_expression (str): FROM expression - often just a fully-qualified
             table name. Sometimes a subquery. May contain the string
             ``{dataset}`` which will be replaced with an app-specific
             dataset for Glean apps. If the expression is templated
@@ -48,7 +48,7 @@ class DataSource:
     """
 
     name = attr.ib(validator=attr.validators.instance_of(str))
-    _from_expr = attr.ib(validator=attr.validators.instance_of(str))
+    from_expression = attr.ib(validator=attr.validators.instance_of(str))
     experiments_column_type = attr.ib(default="simple", type=str)
     client_id_column = attr.ib(default="client_id", type=str)
     submission_date_column = attr.ib(default="submission_date", type=str)
@@ -69,8 +69,8 @@ class DataSource:
         self.from_expr_for(None)
 
     def from_expr_for(self, dataset: Optional[str]) -> str:
-        """Expands the ``from_expr`` template for the given dataset.
-        If ``from_expr`` is not a template, returns ``from_expr``.
+        """Expands the ``from_expression`` template for the given dataset.
+        If ``from_expression`` is not a template, returns ``from_expression``.
         Args:
             dataset (str or None): Dataset name to substitute
                 into the from expression.
@@ -78,12 +78,12 @@ class DataSource:
         effective_dataset = dataset or self.default_dataset
         if effective_dataset is None:
             try:
-                return self._from_expr.format()
+                return self.from_expression.format()
             except Exception as e:
                 raise ValueError(
-                    f"{self.name}: from_expr contains a dataset template but no value was provided."  # noqa:E501
+                    f"{self.name}: from_expression contains a dataset template but no value was provided."  # noqa:E501
                 ) from e
-        return self._from_expr.format(dataset=effective_dataset)
+        return self.from_expression.format(dataset=effective_dataset)
 
 
 @attr.s(auto_attribs=True)
@@ -124,9 +124,14 @@ class DataSourceDefinition:
     default_dataset: Optional[str] = None
 
     def resolve(self, spec: "AnalysisSpec") -> DataSource:
-        params: Dict[str, Any] = {"name": self.name, "from_expr": self.from_expression}
+        params: Dict[str, Any] = {"name": self.name, "from_expression": self.from_expression}
         # Allow mozanalysis to infer defaults for these values:
-        for k in ("experiments_column_type", "client_id_column", "submission_date_column"):
+        for k in (
+            "experiments_column_type",
+            "client_id_column",
+            "submission_date_column",
+            "default_dataset",
+        ):
             v = getattr(self, k)
             if v:
                 params[k] = v

@@ -1,6 +1,7 @@
 import copy
 from collections import defaultdict
 from enum import Enum
+from textwrap import dedent
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import attr
@@ -182,8 +183,10 @@ class MetricDefinition:
                 name=self.name,
                 data_source=self.data_source.resolve(spec, experiment, configs),
                 select_expression=select_expression,
-                friendly_name=self.friendly_name,
-                description=self.description,
+                friendly_name=dedent(self.friendly_name)
+                if self.friendly_name
+                else self.friendly_name,
+                description=dedent(self.description) if self.description else self.description,
                 bigger_is_better=self.bigger_is_better,
                 analysis_bases=self.analysis_bases or [AnalysisBasis.ENROLLMENTS],
             )

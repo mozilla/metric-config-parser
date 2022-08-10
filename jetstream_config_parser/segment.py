@@ -1,3 +1,4 @@
+from textwrap import dedent
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
 import attr
@@ -25,7 +26,7 @@ class SegmentDataSource:
     Args:
         name (str): Name for the Data Source. Should be unique to avoid
             confusion.
-        from_expr (str): FROM expression - often just a fully-qualified
+        from_expression (str): FROM expression - often just a fully-qualified
             table name. Sometimes a subquery. May contain the string
             ``{dataset}`` which will be replaced with an app-specific
             dataset for Glean apps. If the expression is templated
@@ -39,13 +40,13 @@ class SegmentDataSource:
             that contains the submission date (as a date, not
             timestamp). Defaults to 'submission_date'.
         default_dataset (str, optional): The value to use for
-            `{dataset}` in from_expr if a value is not provided
-            at runtime. Mandatory if from_expr contains a
+            `{dataset}` in from_expression if a value is not provided
+            at runtime. Mandatory if from_expression contains a
             `{dataset}` parameter.
     """
 
     name = attr.ib(validator=attr.validators.instance_of(str))
-    _from_expr = attr.ib(validator=attr.validators.instance_of(str))
+    from_expression = attr.ib(validator=attr.validators.instance_of(str))
     window_start = attr.ib(default=0, type=int)
     window_end = attr.ib(default=0, type=int)
     client_id_column = attr.ib(default="client_id", type=str)
@@ -114,10 +115,10 @@ class SegmentDataSourceDefinition:
         _configs: "ConfigCollection",
     ) -> SegmentDataSource:
         env = jinja2.Environment(autoescape=False, undefined=StrictUndefined)
-        from_expr = env.from_string(self.from_expression).render(experiment=experiment)
+        from_expression = env.from_string(self.from_expression).render(experiment=experiment)
         kwargs: Dict[str, Any] = {
             "name": self.name,
-            "from_expr": from_expr,
+            "from_expression": from_expression,
             "window_start": self.window_start,
             "window_end": self.window_end,
         }
@@ -175,8 +176,8 @@ class SegmentDefinition:
             name=self.name,
             data_source=data_source,
             select_expression=configs.get_env().from_string(self.select_expression).render(),
-            friendly_name=self.friendly_name,
-            description=self.description,
+            friendly_name=dedent(self.friendly_name) if self.friendly_name else self.friendly_name,
+            description=dedent(self.description) if self.description else self.description,
         )
 
 

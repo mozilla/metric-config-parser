@@ -105,9 +105,9 @@ class TestExperimentSpec:
         assert configured.experiment.segments[1].name == "my_cool_segment"
 
         assert "agg_any" not in configured.experiment.segments[1].select_expression
-        assert "1970" not in configured.experiment.segments[1].data_source._from_expr
-        assert "{{" not in configured.experiment.segments[1].data_source._from_expr
-        assert "2019-12-01" in configured.experiment.segments[1].data_source._from_expr
+        assert "1970" not in configured.experiment.segments[1].data_source.from_expression
+        assert "{{" not in configured.experiment.segments[1].data_source.from_expression
+        assert "2019-12-01" in configured.experiment.segments[1].data_source.from_expression
 
     def test_pre_treatment_config(self, experiments, config_collection):
         config_str = dedent(
