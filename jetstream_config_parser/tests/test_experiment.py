@@ -223,6 +223,27 @@ class TestExperimentConf:
         assert cfg.experiment.start_date == dt.datetime(2020, 12, 31, tzinfo=pytz.utc)
         assert cfg.experiment.end_date == dt.datetime(2021, 2, 1, tzinfo=pytz.utc)
 
+    def test_enrollment_end_date(self, experiments, config_collection):
+        conf = dedent(
+            """
+            [experiment]
+            """
+        )
+        spec = AnalysisSpec.from_dict(toml.loads(conf))
+        cfg = spec.resolve(experiments[7], config_collection)
+        assert cfg.experiment.enrollment_period == 3
+
+    def test_enrollment_end_date_overwrite(self, experiments, config_collection):
+        conf = dedent(
+            """
+            [experiment]
+            enrollment_period = 8
+            """
+        )
+        spec = AnalysisSpec.from_dict(toml.loads(conf))
+        cfg = spec.resolve(experiments[7], config_collection)
+        assert cfg.experiment.enrollment_period == 8
+
 
 class TestDefaultConfiguration:
     def test_descriptions_defined(self, experiments, config_collection):
