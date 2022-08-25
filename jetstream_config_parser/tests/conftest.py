@@ -297,5 +297,6 @@ def experiments():
             is_high_population=True,
             outcomes=["parameterized_distinct_by_branch_config"],
             app_name="firefox_desktop",
+            enrollment_end_date=dt.datetime(2019, 12, 3, tzinfo=pytz.utc),
         ),
     ]

@@ -38,6 +38,7 @@ class Experiment:
         proposed_enrollment: experiment proposed_enrollment
         reference_branch: V1 experiment branch slug where is_control is True;
             V6 experiment reference_branch
+        enrollment_end_date: experiment enrollment_end_date
     """
 
     experimenter_slug: Optional[str]
@@ -53,6 +54,7 @@ class Experiment:
     app_name: str
     app_id: Optional[str] = None
     outcomes: List[str] = attr.Factory(list)
+    enrollment_end_date: Optional[dt.datetime] = None
 
 
 @attr.s(auto_attribs=True)
@@ -95,6 +97,19 @@ class ExperimentConfiguration:
         return self.experiment_spec.enrollment_period or self.experiment.proposed_enrollment or 0
 
     @property
+    def enrollment_end_date(self) -> Optional[dt.datetime]:
+        return self.experiment.enrollment_end_date
+
+    @property
+    def enrollment_period(self) -> int:
+        if self.experiment_spec.enrollment_period is not None:
+            return self.experiment_spec.enrollment_period
+        elif self.enrollment_end_date is not None and self.start_date is not None:
+            return (self.enrollment_end_date - self.start_date).days + 1
+
+        return self.proposed_enrollment or 0
+
+    @property
     def reference_branch(self) -> Optional[str]:
         return self.experiment_spec.reference_branch or self.experiment.reference_branch
 
@@ -127,7 +142,7 @@ class ExperimentConfiguration:
     def last_enrollment_date_str(self) -> str:
         if not self.start_date:
             raise NoStartDateException(self.normandy_slug)
-        return (self.start_date + dt.timedelta(days=self.proposed_enrollment)).strftime("%Y-%m-%d")
+        return (self.start_date + dt.timedelta(days=self.enrollment_period)).strftime("%Y-%m-%d")
 
     @property
     def skip(self) -> bool:
@@ -140,6 +155,7 @@ class ExperimentConfiguration:
             or self.start_date != self.experiment.start_date
             or self.end_date != self.experiment.end_date
             or self.proposed_enrollment != self.experiment.proposed_enrollment
+            or self.enrollment_end_date != self.experiment.enrollment_end_date
         )
 
     # see https://stackoverflow.com/questions/50888391/pickle-of-object-with-getattr-method-in-
