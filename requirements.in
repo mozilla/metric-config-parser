@@ -14,7 +14,7 @@ black==22.6.0
     # via pytest-black
 cattrs==22.1.0
     # via mozilla-jetstream-config-parser
-certifi==2022.6.15
+certifi==2022.9.14
     # via requests
 charset-normalizer==2.1.0
     # via requests
