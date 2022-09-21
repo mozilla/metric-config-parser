@@ -104,8 +104,8 @@ class SegmentDataSourceDefinition:
     from_expression: str
     window_start: int = 0
     window_end: int = 0
-    client_id_column: Optional[str] = None
-    submission_date_column: Optional[str] = None
+    client_id_column: Optional[str] = "client_id"
+    submission_date_column: Optional[str] = "submission_date"
     default_dataset: Optional[str] = None
 
     def resolve(
