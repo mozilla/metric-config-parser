@@ -24,6 +24,6 @@ class TestConfigIntegration:
         )
 
     def test_configs_from_private_repo(self):
-        config_collection = ConfigCollection.from_github_repo(repo_url="test", is_private=True)
+        config_collection = ConfigCollection.from_github_repo(is_private=True)
         assert config_collection is not None
-        assert config_collection.configs[0].experiment.is_private
+        assert config_collection.configs[0].spec.experiment.is_private

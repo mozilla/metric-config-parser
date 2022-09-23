@@ -151,7 +151,7 @@ class DefinitionConfig(Config):
     Represents an definition config file with definition that can be referenced in other configs.
     """
 
-    platform: str
+    platform: str = "firefox_desktop"
 
     def validate(self, configs: "ConfigCollection", _experiment: Experiment = None) -> None:
         dummy_experiment = Experiment(
