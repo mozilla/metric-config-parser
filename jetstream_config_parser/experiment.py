@@ -188,6 +188,7 @@ class ExperimentSpec:
     segments: List[SegmentReference] = attr.Factory(list)
     skip: bool = False
     exposure_signal: Optional[ExposureSignalDefinition] = None
+    is_private: bool = False
 
     @staticmethod
     def parse_date(yyyy_mm_dd: Optional[str]) -> Optional[dt.datetime]:
