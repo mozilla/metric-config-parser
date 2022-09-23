@@ -37,6 +37,7 @@ class Config:
     slug: str
     spec: AnalysisSpec
     last_modified: dt.datetime
+    is_private: bool = False
 
     def validate(self, configs: "ConfigCollection", experiment: Experiment) -> None:
         spec = AnalysisSpec.default_for_experiment(experiment, configs)
@@ -121,6 +122,7 @@ class Outcome:
     spec: OutcomeSpec
     platform: str
     commit_hash: Optional[str]
+    is_private: bool = False
 
     def validate(self, configs: "ConfigCollection") -> None:
         dummy_experiment = Experiment(
@@ -219,22 +221,29 @@ class ConfigCollection:
     repo_url = "https://github.com/mozilla/jetstream-config"
 
     @classmethod
-    def from_github_repo(cls) -> "ConfigCollection":
+    def from_github_repo(
+        cls, repo_url: Optional[str] = None, is_private: bool = False
+    ) -> "ConfigCollection":
         """Pull in external config files."""
         # download files to tmp directory
         with TemporaryDirectory() as tmp_dir:
-            repo = Repo.clone_from(cls.repo_url, tmp_dir)
+            repo = Repo.clone_from(repo_url or cls.repo_url, tmp_dir)
 
             external_configs = []
 
             for config_file in tmp_dir.glob("*.toml"):
                 last_modified = next(repo.iter_commits("main", paths=config_file)).committed_date
+                analysis_spec = AnalysisSpec.from_dict(toml.load(config_file))
+                analysis_spec.experiment.is_private = (
+                    analysis_spec.experiment.is_private or is_private
+                )
 
                 external_configs.append(
                     Config(
                         config_file.stem,
-                        AnalysisSpec.from_dict(toml.load(config_file)),
+                        analysis_spec,
                         UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
+                        is_private=is_private,
                     )
                 )
 
@@ -248,6 +257,7 @@ class ConfigCollection:
                         spec=OutcomeSpec.from_dict(toml.load(outcome_file)),
                         platform=outcome_file.parent.name,
                         commit_hash=commit_hash,
+                        is_private=is_private,
                     )
                 )
 
@@ -262,6 +272,7 @@ class ConfigCollection:
                         default_config_file.stem,
                         AnalysisSpec.from_dict(toml.load(default_config_file)),
                         UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
+                        is_private=is_private,
                     )
                 )
 
@@ -277,6 +288,7 @@ class ConfigCollection:
                         AnalysisSpec.from_dict(toml.load(definitions_config_file)),
                         UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
                         platform=definitions_config_file.stem,
+                        is_private=is_private,
                     )
                 )
 

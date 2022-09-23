@@ -22,3 +22,8 @@ class TestConfigIntegration:
             config_collection.get_segment_definition("regular_users_v3", "firefox_desktop")
             is not None
         )
+
+    def test_configs_from_private_repo(self):
+        config_collection = ConfigCollection.from_github_repo(repo_url="test", is_private=True)
+        assert config_collection is not None
+        assert config_collection.configs[0].experiment.is_private
