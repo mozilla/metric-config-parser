@@ -399,9 +399,9 @@ types-toml==0.10.8 \
     --hash=sha256:8300fd093e5829eb9c1fba69cee38130347d4b74ddf32d0a7df650ae55c2b599 \
     --hash=sha256:b7e7ea572308b1030dc86c3ba825c5210814c2825612ec679eb7814f8dd9295a
     # via -r requirements.in
-types-urllib3==1.26.22 \
-    --hash=sha256:09a8783e1002472e8d1e1f3792d4c5cca1fffebb9b48ee1512aae6d16fe186bc \
-    --hash=sha256:b05af90e73889e688094008a97ca95788db8bf3736e2776fd43fb6b171485d94
+types-urllib3==1.26.25 \
+    --hash=sha256:5aef0e663724eef924afa8b320b62ffef2c1736c1fa6caecfc9bc6c8ae2c3def \
+    --hash=sha256:c1d78cef7bd581e162e46c20a57b2e1aa6ebecdcf01fd0713bb90978ff3e3427
     # via
     #   -r requirements.in
     #   types-requests
