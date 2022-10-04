@@ -224,3 +224,138 @@ class TestConfigIntegration:
         )
         with pytest.raises(DefinitionNotFound):
             extern.validate(configs=ConfigCollection())
+
+    def test_merge_config_collection(self):
+        config_str = dedent(
+            """
+            [metrics.active_hours]
+            select_expression = "1"
+            data_source = "baseline"
+
+            [metrics.active_hours.statistics.bootstrap_mean]
+
+            [data_sources.baseline]
+            from_expression = "mozdata.search.baseline"
+            experiments_column_type = "simple"
+            """
+        )
+        extern = Config(
+            slug="cool_experiment",
+            spec=self.spec,
+            last_modified=datetime.datetime.now(),
+        )
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection_1 = ConfigCollection(
+            configs=[extern], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        config_str = dedent(
+            """
+            [metrics.active_hours]
+            select_expression = "1"
+            data_source = "baseline"
+
+            [metrics.active_hours.statistics.bootstrap_mean]
+
+            [data_sources.baseline]
+            from_expression = "mozdata.search.baseline"
+            experiments_column_type = "simple"
+            """
+        )
+        extern = Config(
+            slug="cool_experiment_2",
+            spec=self.spec,
+            last_modified=datetime.datetime.now(),
+        )
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection_2 = ConfigCollection(
+            configs=[extern], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        config_collection_1.merge(config_collection_2)
+        assert config_collection_1.configs[0].slug == "cool_experiment"
+        assert config_collection_1.configs[1].slug == "cool_experiment_2"
+
+    def test_merge_config_collection_override(self):
+        config_str = dedent(
+            """
+            [metrics.active_hours]
+            select_expression = "1"
+            data_source = "baseline"
+
+            [metrics.active_hours.statistics.bootstrap_mean]
+
+            [data_sources.baseline]
+            from_expression = "mozdata.search.baseline"
+            experiments_column_type = "simple"
+            """
+        )
+        extern = Config(
+            slug="cool_experiment",
+            spec=self.spec,
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection_1 = ConfigCollection(
+            configs=[extern], outcomes=[], defaults=[], definitions=[]
+        )
+
+        config_str = dedent(
+            """
+            [metrics.active_hours]
+            select_expression = "4"
+            data_source = "baseline"
+
+            [metrics.active_hours.statistics.bootstrap_mean]
+
+            [metrics.unenroll]
+            select_expression = "3"
+            data_source = "baseline"
+
+            [metrics.unenroll.statistics.bootstrap_mean]
+
+            [data_sources.baseline]
+            from_expression = "mozdata.search.baseline"
+            experiments_column_type = "simple"
+            """
+        )
+        extern = Config(
+            slug="cool_experiment",
+            spec=self.spec,
+            last_modified=datetime.datetime.now(),
+        )
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection_2 = ConfigCollection(
+            configs=[extern], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        assert len(config_collection_1.definitions) == 0
+        config_collection_1.merge(config_collection_2)
+
+        assert len(config_collection_1.configs) == 1
+        assert config_collection_1.configs[0].slug == "cool_experiment"
+
+        assert [
+            m
+            for slug, m in config_collection_1.definitions[0].spec.metrics.definitions.items()
+            if slug == "active_hours"
+        ][0].select_expression == "4"
+        assert [
+            m
+            for slug, m in config_collection_1.definitions[0].spec.metrics.definitions.items()
+            if slug == "unenroll"
+        ][0].select_expression == "3"
