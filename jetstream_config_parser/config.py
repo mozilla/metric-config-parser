@@ -1,4 +1,5 @@
 import datetime as dt
+from copy import deepcopy
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -298,6 +299,24 @@ class ConfigCollection:
 
         return cls(external_configs, outcomes, default_configs, definitions, functions_spec)
 
+    @classmethod
+    def from_github_repos(
+        cls, repo_urls: Optional[List[str]] = None, is_private: bool = False
+    ) -> "ConfigCollection":
+        """Load configs from the provided repos."""
+        if repo_urls is None or len(repo_urls) > 0:
+            return ConfigCollection.from_github_repo()
+
+        configs = None
+        for repo in repo_urls:
+            if configs is None:
+                configs = ConfigCollection.from_github_repo(repo, is_private=is_private)
+            else:
+                collection = ConfigCollection.from_github_repo(repo, is_private=is_private)
+                configs.merge(collection)
+
+        return configs or ConfigCollection.from_github_repo()
+
     def spec_for_outcome(self, slug: str, platform: str) -> Optional[OutcomeSpec]:
         """Return the spec for a specific outcome"""
         for outcome in self.outcomes:
@@ -377,3 +396,66 @@ class ConfigCollection:
                 env.globals[slug] = function.definition
 
         return env
+
+    def merge(self, other: "ConfigCollection"):
+        """
+        Merge this config collection with another.
+
+        Configs in `other` will take precedence.
+        """
+        # merge configs
+        other_configs = {config.slug: config for config in deepcopy(other.configs)}
+        configs = {config.slug: config for config in deepcopy(self.configs)}
+
+        for slug, config in other_configs.items():
+            if slug not in configs:
+                configs[slug] = config
+            else:
+                configs[slug].spec.merge(config.spec)
+
+        self.configs = list(configs.values())
+
+        # merge outcomes
+        outcomes = deepcopy(other.outcomes)
+        slugs = [outcome.slug for outcome in outcomes]
+        for outcome in self.outcomes:
+            if outcome.slug not in slugs:
+                outcomes.append(outcome)
+
+        # merge definitions
+        other_definitions = {
+            definition.slug: definition for definition in deepcopy(other.definitions)
+        }
+        definitions = {definition.slug: definition for definition in deepcopy(self.definitions)}
+
+        for slug, definition in other_definitions.items():
+            if slug not in definitions:
+                definitions[slug] = definition
+            else:
+                definitions[slug].spec.merge(definition.spec)
+
+        self.definitions = list(definitions.values())
+
+        # merge defaults
+        other_defaults = {default.slug: default for default in deepcopy(other.defaults)}
+        defaults = {default.slug: default for default in deepcopy(self.defaults)}
+
+        for slug, default in other_defaults.items():
+            if slug not in defaults:
+                defaults[slug] = default
+            else:
+                defaults[slug].spec.merge(default.spec)
+
+        self.defaults = list(defaults.values())
+
+        # merge functions
+        functions = deepcopy(other.functions.functions) if other.functions else {}
+        slugs = [slug for slug, _ in functions.items()]
+        for slug, function in self.functions.functions.items() if self.functions else {}:
+            if slug not in slugs:
+                functions[slug] = function
+
+        if self.functions is None:
+            self.functions = FunctionsSpec(functions=functions)
+        else:
+            self.functions.functions = functions
