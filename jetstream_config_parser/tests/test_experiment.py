@@ -244,6 +244,28 @@ class TestExperimentConf:
         cfg = spec.resolve(experiments[7], config_collection)
         assert cfg.experiment.enrollment_period == 8
 
+    def test_private_experiment_no_dataset(self, experiments):
+        conf = dedent(
+            """
+            [experiment]
+            is_private = true
+            """
+        )
+        with pytest.raises(ValueError):
+            AnalysisSpec.from_dict(toml.loads(conf))
+
+    def test_private_experiment(self, experiments, config_collection):
+        conf = dedent(
+            """
+            [experiment]
+            is_private = true
+            dataset_id = "test"
+            """
+        )
+        spec = AnalysisSpec.from_dict(toml.loads(conf))
+        cfg = spec.resolve(experiments[7], config_collection)
+        assert cfg.experiment.dataset_id == "test"
+
 
 class TestDefaultConfiguration:
     def test_descriptions_defined(self, experiments, config_collection):

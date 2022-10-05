@@ -148,6 +148,14 @@ class ExperimentConfiguration:
     def skip(self) -> bool:
         return self.experiment_spec.skip
 
+    @property
+    def is_private(self) -> bool:
+        return self.experiment_spec.is_private
+
+    @property
+    def dataset_id(self) -> Optional[str]:
+        return self.experiment_spec.dataset_id
+
     def has_external_config_overrides(self) -> bool:
         """Check whether the external config overrides experiment configuration."""
         return (
@@ -176,6 +184,11 @@ def _validate_yyyy_mm_dd(instance: Any, attribute: Any, value: Any) -> None:
     instance.parse_date(value)
 
 
+def _validate_dataset_id(instance: Any, attribute, value):
+    if instance.is_private and value is None:
+        raise ValueError("dataset_id must be set to a custom dataset for private experiments")
+
+
 @attr.s(auto_attribs=True, kw_only=True)
 class ExperimentSpec:
     """Describes the interface for overriding experiment details."""
@@ -189,6 +202,7 @@ class ExperimentSpec:
     skip: bool = False
     exposure_signal: Optional[ExposureSignalDefinition] = None
     is_private: bool = False
+    dataset_id: Optional[str] = attr.ib(default=None, validator=_validate_dataset_id)
 
     @staticmethod
     def parse_date(yyyy_mm_dd: Optional[str]) -> Optional[dt.datetime]:
