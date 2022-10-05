@@ -43,7 +43,11 @@ class Config:
     def validate(self, configs: "ConfigCollection", experiment: Experiment) -> None:
         spec = AnalysisSpec.default_for_experiment(experiment, configs)
         spec.merge(self.spec)
-        spec.resolve(experiment, configs)
+        resolved = spec.resolve(experiment, configs)
+
+        # private configs need to override the default dataset
+        if self.is_private and resolved.experiment.dataset_id is None:
+            raise ValueError("dataset_id needs to be explicitly set for private experiments")
 
 
 def validate_config_settings(config_file: Path) -> None:
@@ -172,7 +176,9 @@ class DefinitionConfig(Config):
         self.spec.resolve(dummy_experiment, configs)
 
 
-def entity_from_path(path: Path) -> Union[Config, Outcome, DefaultConfig, DefinitionConfig]:
+def entity_from_path(
+    path: Path, is_private: bool = False
+) -> Union[Config, Outcome, DefaultConfig, DefinitionConfig]:
     is_outcome = path.parent.parent.name == OUTCOMES_DIR
     is_default_config = path.parent.name == DEFAULTS_DIR
     is_definition_config = path.parent.name == DEFINITIONS_DIR
@@ -185,12 +191,15 @@ def entity_from_path(path: Path) -> Union[Config, Outcome, DefaultConfig, Defini
     if is_outcome:
         platform = path.parent.name
         spec = OutcomeSpec.from_dict(config_dict)
-        return Outcome(slug=slug, spec=spec, platform=platform, commit_hash=None)
+        return Outcome(
+            slug=slug, spec=spec, platform=platform, commit_hash=None, is_private=is_private
+        )
     elif is_default_config:
         return DefaultConfig(
             slug=slug,
             spec=AnalysisSpec.from_dict(config_dict),
             last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
+            is_private=is_private,
         )
     elif is_definition_config:
         return DefinitionConfig(
@@ -198,11 +207,13 @@ def entity_from_path(path: Path) -> Union[Config, Outcome, DefaultConfig, Defini
             spec=AnalysisSpec.from_dict(config_dict),
             last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
             platform=slug,
+            is_private=is_private,
         )
     return Config(
         slug=slug,
         spec=AnalysisSpec.from_dict(config_dict),
         last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
+        is_private=is_private,
     )
 
 
