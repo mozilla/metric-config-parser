@@ -1,10 +1,11 @@
 import copy
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping, Optional
 
 import attr
 
 if TYPE_CHECKING:
     from .config import ConfigCollection
+    from .definition import DefinitionSpecSub, DefinitionSpec
 
 from .data_source import DataSourcesSpec
 from .experiment import Experiment, ExperimentConfiguration, ExperimentSpec
@@ -35,16 +36,36 @@ class AnalysisSpec:
     which will produce a fully populated, concrete AnalysisConfiguration.
     """
 
-    experiment: ExperimentSpec = attr.Factory(ExperimentSpec)
     metrics: MetricsSpec = attr.Factory(MetricsSpec)
     data_sources: DataSourcesSpec = attr.Factory(DataSourcesSpec)
     segments: SegmentsSpec = attr.Factory(SegmentsSpec)
     parameters: ParameterSpec = attr.Factory(ParameterSpec)
+    experiment: ExperimentSpec = attr.Factory(ExperimentSpec)
     _resolved: bool = False
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "AnalysisSpec":
         return converter.structure(d, cls)
+
+    @classmethod
+    def from_definition_spec(
+        cls, spec: "DefinitionSpec", experiment: Optional["ExperimentSpec"] = None
+    ) -> "AnalysisSpec":
+        if experiment is None:
+            return cls(
+                metrics=spec.metrics,
+                data_sources=spec.data_sources,
+                segments=spec.segments,
+                parameters=spec.parameters,
+            )
+        else:
+            return cls(
+                metrics=spec.metrics,
+                data_sources=spec.data_sources,
+                segments=spec.segments,
+                parameters=spec.parameters,
+                experiment=experiment,
+            )
 
     @classmethod
     def default_for_experiment(
@@ -53,12 +74,12 @@ class AnalysisSpec:
         """Return the default spec based on the experiment type."""
         default_metrics = configs.get_platform_defaults(experiment.app_name)
 
-        if default_metrics is None:
+        if default_metrics is None or not isinstance(default_metrics, AnalysisSpec):
             default_metrics = cls()
 
         type_metrics = configs.get_platform_defaults(experiment.type)
 
-        if type_metrics is not None:
+        if type_metrics is not None or not isinstance(default_metrics, AnalysisSpec):
             default_metrics.merge(type_metrics)
 
         return copy.deepcopy(default_metrics)
@@ -89,12 +110,14 @@ class AnalysisSpec:
 
         return AnalysisConfiguration(resolved_experiment, metrics)
 
-    def merge(self, other: "AnalysisSpec"):
+    def merge(self, other: "DefinitionSpecSub"):
         """Merges another analysis spec into the current one."""
-        self.experiment.merge(other.experiment)
+        if isinstance(other, AnalysisSpec):
+            self.experiment.merge(other.experiment)
         self.metrics.merge(other.metrics)
         self.data_sources.merge(other.data_sources)
-        self.segments.merge(other.segments)
+        if isinstance(other, AnalysisSpec) or isinstance(other, DefinitionSpec):
+            self.segments.merge(other.segments)
 
     def merge_outcome(self, other: "OutcomeSpec"):
         """Merges an outcome snippet into the analysis spec."""

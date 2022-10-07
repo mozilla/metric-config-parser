@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import attr
 
@@ -6,8 +6,9 @@ from jetstream_config_parser.errors import DefinitionNotFound
 
 if TYPE_CHECKING:
     from jetstream_config_parser.config import ConfigCollection
-    from .analysis import AnalysisSpec
     from .experiment import ExperimentConfiguration
+    from .definition import DefinitionSpecSub
+    from .project import ProjectConfiguration
 
 from .util import converter
 
@@ -92,16 +93,14 @@ class DataSourceReference:
 
     def resolve(
         self,
-        spec: "AnalysisSpec",
-        experiment: "ExperimentConfiguration",
+        spec: "DefinitionSpecSub",
+        conf: Union["ExperimentConfiguration", "ProjectConfiguration"],
         configs: "ConfigCollection",
     ) -> DataSource:
         if self.name in spec.data_sources.definitions:
             return spec.data_sources.definitions[self.name].resolve(spec)
 
-        data_source_definition = configs.get_data_source_definition(
-            self.name, experiment.experiment.app_name
-        )
+        data_source_definition = configs.get_data_source_definition(self.name, conf.app_name)
         if data_source_definition is None:
             raise DefinitionNotFound(f"No default definition for data source '{self.name}' found")
         return data_source_definition.resolve(spec)
@@ -123,7 +122,7 @@ class DataSourceDefinition:
     submission_date_column: Optional[str] = "submission_date"
     default_dataset: Optional[str] = None
 
-    def resolve(self, spec: "AnalysisSpec") -> DataSource:
+    def resolve(self, spec: "DefinitionSpecSub") -> DataSource:
         params: Dict[str, Any] = {"name": self.name, "from_expression": self.from_expression}
         # Allow mozanalysis to infer defaults for these values:
         for k in (

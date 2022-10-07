@@ -13,6 +13,8 @@ if TYPE_CHECKING:
     from .analysis import AnalysisSpec
     from .config import ConfigCollection
     from .experiment import ExperimentConfiguration
+    from .definition import DefinitionSpecSub
+    from .project import ProjectConfiguration
 
 from .data_source import DataSource, DataSourceReference
 from .parameter import ParameterDefinition
@@ -79,15 +81,15 @@ class MetricReference:
     def resolve(
         self,
         spec: "AnalysisSpec",
-        experiment: "ExperimentConfiguration",
+        conf: Union["ExperimentConfiguration", "ProjectConfiguration"],
         configs: "ConfigCollection",
     ) -> List[Summary]:
         if self.name in spec.metrics.definitions:
-            return spec.metrics.definitions[self.name].resolve(spec, experiment, configs)
+            return spec.metrics.definitions[self.name].resolve(spec, conf, configs)
 
-        metric_definition = configs.get_metric_definition(self.name, experiment.experiment.app_name)
+        metric_definition = configs.get_metric_definition(self.name, conf.app_name)
         if metric_definition:
-            return metric_definition.resolve(spec, experiment, configs=configs)
+            return metric_definition.resolve(spec, conf, configs=configs)
 
         raise DefinitionNotFound(f"Could not locate metric {self.name}")
 
@@ -152,8 +154,8 @@ class MetricDefinition:
 
     def resolve(
         self,
-        spec: "AnalysisSpec",
-        experiment: "ExperimentConfiguration",
+        spec: "DefinitionSpecSub",
+        conf: Union["ExperimentConfiguration", "ProjectConfiguration"],
         configs: "ConfigCollection",
     ) -> List[Summary]:
         metric_summary = None
@@ -161,9 +163,7 @@ class MetricDefinition:
 
         if self.select_expression is None or self.data_source is None:
             # checks if a metric from mozanalysis was referenced
-            metric_definition = configs.get_metric_definition(
-                self.name, experiment.experiment.app_name
-            )
+            metric_definition = configs.get_metric_definition(self.name, conf.app_name)
 
             if metric_definition is None:
                 raise DefinitionNotFound(
@@ -171,7 +171,7 @@ class MetricDefinition:
                 )
 
             metric_definition.analysis_bases = self.analysis_bases or [AnalysisBasis.ENROLLMENTS]
-            metric_summary = metric_definition.resolve(spec, experiment, configs)
+            metric_summary = metric_definition.resolve(spec, conf, configs)
         else:
             select_expression = self.generate_select_expression(
                 spec.parameters.definitions,
@@ -181,7 +181,7 @@ class MetricDefinition:
 
             metric = Metric(
                 name=self.name,
-                data_source=self.data_source.resolve(spec, experiment, configs),
+                data_source=self.data_source.resolve(spec, conf, configs),
                 select_expression=select_expression,
                 friendly_name=dedent(self.friendly_name)
                 if self.friendly_name
@@ -283,7 +283,7 @@ class MetricsSpec:
     def resolve(
         self,
         spec: "AnalysisSpec",
-        experiment: "ExperimentConfiguration",
+        conf: Union["ExperimentConfiguration", "ProjectConfiguration"],
         configs: "ConfigCollection",
     ) -> MetricsConfigurationType:
         result = {}
@@ -291,7 +291,7 @@ class MetricsSpec:
             summaries = [
                 summary
                 for ref in getattr(self, period.table_suffix)
-                for summary in ref.resolve(spec, experiment, configs)
+                for summary in ref.resolve(spec, conf, configs)
             ]
             unique_summaries = []
             seen_summaries = set()

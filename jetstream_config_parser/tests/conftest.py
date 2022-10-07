@@ -14,6 +14,7 @@ from jetstream_config_parser.outcome import OutcomeSpec
 
 @pytest.fixture
 def config_collection():
+
     config_str = dedent(
         """
         [metrics]

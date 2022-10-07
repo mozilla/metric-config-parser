@@ -84,15 +84,15 @@ class SegmentReference:
     def resolve(
         self,
         spec: "AnalysisSpec",
-        experiment: "ExperimentConfiguration",
+        conf: "ExperimentConfiguration",
         configs: "ConfigCollection",
     ) -> Segment:
         if self.name in spec.segments.definitions:
-            return spec.segments.definitions[self.name].resolve(spec, experiment, configs)
-        segment_definition = configs.get_segment_definition(self.name, experiment.app_name)
+            return spec.segments.definitions[self.name].resolve(spec, conf, configs)
+        segment_definition = configs.get_segment_definition(self.name, conf.app_name)
         if segment_definition is None:
             raise DefinitionNotFound(f"Could not find definition for segment '{self.name}'")
-        return segment_definition.resolve(spec, experiment, configs)
+        return segment_definition.resolve(spec, conf, configs)
 
 
 converter.register_structure_hook(SegmentReference, lambda obj, _type: SegmentReference(name=obj))
@@ -111,11 +111,11 @@ class SegmentDataSourceDefinition:
     def resolve(
         self,
         spec: "AnalysisSpec",
-        experiment: "ExperimentConfiguration",
+        conf: "ExperimentConfiguration",
         _configs: "ConfigCollection",
     ) -> SegmentDataSource:
         env = jinja2.Environment(autoescape=False, undefined=StrictUndefined)
-        from_expression = env.from_string(self.from_expression).render(experiment=experiment)
+        from_expression = env.from_string(self.from_expression).render(experiment=conf)
         kwargs: Dict[str, Any] = {
             "name": self.name,
             "from_expression": from_expression,
@@ -136,19 +136,17 @@ class SegmentDataSourceReference:
     def resolve(
         self,
         spec: "AnalysisSpec",
-        experiment: "ExperimentConfiguration",
+        conf: "ExperimentConfiguration",
         configs: "ConfigCollection",
     ) -> SegmentDataSource:
         if self.name in spec.segments.data_sources:
-            return spec.segments.data_sources[self.name].resolve(spec, experiment, configs)
-        segment_definition = configs.get_segment_data_source_definition(
-            self.name, experiment.app_name
-        )
+            return spec.segments.data_sources[self.name].resolve(spec, conf, configs)
+        segment_definition = configs.get_segment_data_source_definition(self.name, conf.app_name)
         if segment_definition is None:
             raise DefinitionNotFound(
                 f"Could not find definition for segment data source '{self.name}'"
             )
-        return segment_definition.resolve(spec, experiment, configs)
+        return segment_definition.resolve(spec, conf, configs)
 
 
 converter.register_structure_hook(
@@ -167,10 +165,10 @@ class SegmentDefinition:
     def resolve(
         self,
         spec: "AnalysisSpec",
-        experiment: "ExperimentConfiguration",
+        conf: "ExperimentConfiguration",
         configs: "ConfigCollection",
     ) -> Segment:
-        data_source = self.data_source.resolve(spec, experiment, configs)
+        data_source = self.data_source.resolve(spec, conf, configs)
 
         return Segment(
             name=self.name,
