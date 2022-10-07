@@ -1,9 +1,9 @@
 import datetime as dt
+import enum
 from typing import TYPE_CHECKING, Any, List, Optional
 
 import attr
 import jinja2
-import pytz
 from jinja2 import StrictUndefined
 
 if TYPE_CHECKING:
@@ -13,6 +13,20 @@ if TYPE_CHECKING:
 from .errors import NoStartDateException
 from .exposure_signal import ExposureSignal, ExposureSignalDefinition
 from .segment import Segment, SegmentReference
+from .util import parse_date
+
+
+class Channel(enum.Enum):
+    """Release channel."""
+
+    NIGHTLY = "nightly"
+    BETA = "beta"
+    RELEASE = "release"
+
+    @classmethod
+    def has_value(cls, value: str) -> bool:
+        """Check if a specific value is represented by the enum."""
+        return value in cls._value2member_map_  # type: ignore
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
@@ -55,6 +69,9 @@ class Experiment:
     app_id: Optional[str] = None
     outcomes: List[str] = attr.Factory(list)
     enrollment_end_date: Optional[dt.datetime] = None
+    boolean_pref: Optional[str] = None
+    channel: Optional[Channel] = None
+    is_rollout: bool = False
 
 
 @attr.s(auto_attribs=True)
@@ -115,13 +132,11 @@ class ExperimentConfiguration:
 
     @property
     def start_date(self) -> Optional[dt.datetime]:
-        return (
-            ExperimentSpec.parse_date(self.experiment_spec.start_date) or self.experiment.start_date
-        )
+        return parse_date(self.experiment_spec.start_date) or self.experiment.start_date
 
     @property
     def end_date(self) -> Optional[dt.datetime]:
-        return ExperimentSpec.parse_date(self.experiment_spec.end_date) or self.experiment.end_date
+        return parse_date(self.experiment_spec.end_date) or self.experiment.end_date
 
     @property
     def status(self) -> Optional[str]:
@@ -153,6 +168,10 @@ class ExperimentConfiguration:
         return self.experiment_spec.is_private
 
     @property
+    def app_name(self) -> str:
+        return self.experiment.app_name
+
+    @property
     def dataset_id(self) -> Optional[str]:
         return self.experiment_spec.dataset_id
 
@@ -181,7 +200,7 @@ class ExperimentConfiguration:
 
 
 def _validate_yyyy_mm_dd(instance: Any, attribute: Any, value: Any) -> None:
-    instance.parse_date(value)
+    parse_date(value)
 
 
 def _validate_dataset_id(instance: Any, attribute, value):
@@ -204,14 +223,8 @@ class ExperimentSpec:
     is_private: bool = False
     dataset_id: Optional[str] = attr.ib(default=None, validator=_validate_dataset_id)
 
-    @staticmethod
-    def parse_date(yyyy_mm_dd: Optional[str]) -> Optional[dt.datetime]:
-        if not yyyy_mm_dd:
-            return None
-        return dt.datetime.strptime(yyyy_mm_dd, "%Y-%m-%d").replace(tzinfo=pytz.utc)
-
     def resolve(
-        self, spec: "AnalysisSpec", experiment: Experiment, configs: "ConfigCollection"
+        self, spec: "AnalysisSpec", experiment: "Experiment", configs: "ConfigCollection"
     ) -> ExperimentConfiguration:
         experiment_config = ExperimentConfiguration(self, experiment, [])
         # Segment data sources may need to know the enrollment dates of the experiment,
@@ -222,7 +235,7 @@ class ExperimentSpec:
 
         if self.exposure_signal:
             experiment_config.exposure_signal = self.exposure_signal.resolve(
-                spec, experiment=experiment_config, configs=configs
+                spec, conf=experiment_config, configs=configs
             )
 
         return experiment_config

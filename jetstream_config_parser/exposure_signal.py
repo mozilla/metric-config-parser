@@ -77,12 +77,12 @@ class ExposureSignalDefinition:
     def resolve(
         self,
         spec: "AnalysisSpec",
-        experiment: "ExperimentConfiguration",
+        conf: "ExperimentConfiguration",
         configs: "ConfigCollection",
     ) -> ExposureSignal:
         return ExposureSignal(
             name=self.name,
-            data_source=self.data_source.resolve(spec, experiment=experiment, configs=configs),
+            data_source=self.data_source.resolve(spec, conf=conf, configs=configs),
             select_expression=self.select_expression,
             friendly_name=dedent(self.friendly_name) if self.friendly_name else self.friendly_name,
             description=dedent(self.description) if self.description else self.description,

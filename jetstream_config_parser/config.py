@@ -11,7 +11,9 @@ from jinja2 import StrictUndefined
 from pytz import UTC
 
 from jetstream_config_parser.data_source import DataSourceDefinition
+from jetstream_config_parser.definition import DefinitionSpec, DefinitionSpecSub
 from jetstream_config_parser.function import FunctionsSpec
+from jetstream_config_parser.monitoring import MonitoringSpec
 from jetstream_config_parser.segment import (
     SegmentDataSourceDefinition,
     SegmentDefinition,
@@ -19,7 +21,7 @@ from jetstream_config_parser.segment import (
 
 from .analysis import AnalysisSpec
 from .errors import UnexpectedKeyConfigurationException
-from .experiment import Experiment
+from .experiment import Channel, Experiment
 from .metric import MetricDefinition
 from .outcome import OutcomeSpec
 from .util import TemporaryDirectory
@@ -36,14 +38,24 @@ class Config:
     """Represent an external config file."""
 
     slug: str
-    spec: AnalysisSpec
+    spec: DefinitionSpecSub
     last_modified: dt.datetime
     is_private: bool = False
 
     def validate(self, configs: "ConfigCollection", experiment: Experiment) -> None:
-        spec = AnalysisSpec.default_for_experiment(experiment, configs)
-        spec.merge(self.spec)
-        resolved = spec.resolve(experiment, configs)
+        if isinstance(self.spec, AnalysisSpec):
+            analysis_spec = AnalysisSpec.default_for_experiment(experiment, configs)
+            analysis_spec.merge(self.spec)
+            analysis_spec.resolve(experiment, configs)
+        elif isinstance(self.spec, MonitoringSpec):
+            monitoring_spec = MonitoringSpec.default_for_platform_or_type(
+                experiment.app_name, configs
+            )
+            if experiment.is_rollout:
+                rollout_spec = MonitoringSpec.default_for_platform_or_type("rollout", configs)
+                monitoring_spec.merge(rollout_spec)
+            monitoring_spec.merge(self.spec)
+            monitoring_spec.resolve(experiment, configs)
 
         # private configs need to override the default dataset
         if self.is_private and resolved.experiment.dataset_id is None:
@@ -113,6 +125,7 @@ class DefaultConfig(Config):
             start_date=dt.datetime.now(UTC),
             proposed_enrollment=14,
             app_name=self.slug,
+            channel=Channel.NIGHTLY,
         )
         spec = AnalysisSpec.default_for_experiment(dummy_experiment, configs)
         spec.merge(self.spec)
@@ -142,6 +155,7 @@ class Outcome:
             start_date=dt.datetime.now(UTC),
             proposed_enrollment=14,
             app_name=self.platform,
+            channel=Channel.NIGHTLY,
         )
 
         spec = AnalysisSpec.default_for_experiment(dummy_experiment, configs)
@@ -171,9 +185,15 @@ class DefinitionConfig(Config):
             start_date=dt.datetime.now(UTC),
             proposed_enrollment=14,
             app_name=self.platform,
+            channel=Channel.NIGHTLY,
         )
 
-        self.spec.resolve(dummy_experiment, configs)
+        if not isinstance(self.spec, DefinitionSpec):
+            # this should not happen
+            raise ValueError("Incorrect result type when parsing definition config")
+
+        analysis_spec = AnalysisSpec.from_definition_spec(self.spec)
+        analysis_spec.resolve(dummy_experiment, configs)
 
 
 def entity_from_path(
@@ -195,26 +215,45 @@ def entity_from_path(
             slug=slug, spec=spec, platform=platform, commit_hash=None, is_private=is_private
         )
     elif is_default_config:
-        return DefaultConfig(
-            slug=slug,
-            spec=AnalysisSpec.from_dict(config_dict),
-            last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
-            is_private=is_private,
-        )
+        if "project" in config_dict:
+            # config is from opmon
+            return DefaultConfig(
+                slug=slug,
+                spec=MonitoringSpec.from_dict(config_dict),
+                last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
+                is_private=is_private,
+            )
+        else:
+            return DefaultConfig(
+                slug=slug,
+                spec=AnalysisSpec.from_dict(config_dict),
+                last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
+                is_private=is_private,
+            )
     elif is_definition_config:
         return DefinitionConfig(
             slug=slug,
-            spec=AnalysisSpec.from_dict(config_dict),
+            spec=DefinitionSpec.from_dict(config_dict),
             last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
             platform=slug,
             is_private=is_private,
         )
-    return Config(
-        slug=slug,
-        spec=AnalysisSpec.from_dict(config_dict),
-        last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
-        is_private=is_private,
-    )
+
+    if "project" in config_dict:
+        # config is from opmon
+        return Config(
+            slug=slug,
+            spec=MonitoringSpec.from_dict(config_dict),
+            last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
+            is_private=is_private,
+        )
+    else:
+        return Config(
+            slug=slug,
+            spec=AnalysisSpec.from_dict(config_dict),
+            last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
+            is_private=is_private,
+        )
 
 
 @attr.s(auto_attribs=True)
@@ -245,15 +284,19 @@ class ConfigCollection:
 
             for config_file in tmp_dir.glob("*.toml"):
                 last_modified = next(repo.iter_commits("main", paths=config_file)).committed_date
-                analysis_spec = AnalysisSpec.from_dict(toml.load(config_file))
-                analysis_spec.experiment.is_private = (
-                    analysis_spec.experiment.is_private or is_private
-                )
+                config_json = toml.load(config_file)
+
+                if "project" in config_json:
+                    # opmon spec
+                    spec: DefinitionSpecSub = MonitoringSpec.from_dict(config_json)
+                else:
+                    spec = AnalysisSpec.from_dict(config_json)
+                    spec.experiment.is_private = spec.experiment.is_private or is_private
 
                 external_configs.append(
                     Config(
                         config_file.stem,
-                        analysis_spec,
+                        spec,
                         UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
                         is_private=is_private,
                     )
@@ -279,10 +322,19 @@ class ConfigCollection:
                     repo.iter_commits("main", paths=default_config_file)
                 ).committed_date
 
+                default_config_json = toml.load(default_config_file)
+
+                if "project" in config_json:
+                    # opmon spec
+                    spec = MonitoringSpec.from_dict(default_config_json)
+                else:
+                    spec = AnalysisSpec.from_dict(default_config_json)
+                    spec.experiment.is_private = spec.experiment.is_private or is_private
+
                 default_configs.append(
                     DefaultConfig(
                         default_config_file.stem,
-                        AnalysisSpec.from_dict(toml.load(default_config_file)),
+                        spec,
                         UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
                         is_private=is_private,
                     )
@@ -297,7 +349,7 @@ class ConfigCollection:
                 definitions.append(
                     DefinitionConfig(
                         definitions_config_file.stem,
-                        AnalysisSpec.from_dict(toml.load(definitions_config_file)),
+                        DefinitionSpec.from_dict(toml.load(definitions_config_file)),
                         UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
                         platform=definitions_config_file.stem,
                         is_private=is_private,
@@ -340,11 +392,21 @@ class ConfigCollection:
         """Return the spec for a specific experiment."""
         for config in self.configs:
             if config.slug == slug:
-                return config.spec
+                if isinstance(config.spec, AnalysisSpec):
+                    return config.spec
 
         return None
 
-    def get_platform_defaults(self, platform: str) -> Optional[AnalysisSpec]:
+    def spec_for_project(self, slug: str) -> Optional[MonitoringSpec]:
+        """Return the spec for a specific project."""
+        for config in self.configs:
+            if config.slug == slug:
+                if isinstance(config.spec, MonitoringSpec):
+                    return config.spec
+
+        return None
+
+    def get_platform_defaults(self, platform: str) -> Optional[DefinitionSpecSub]:
         for default in self.defaults:
             if platform == default.slug:
                 return default.spec
@@ -378,21 +440,23 @@ class ConfigCollection:
     ) -> Optional[SegmentDataSourceDefinition]:
         for definition in self.definitions:
             if app_name == definition.platform:
-                for (
-                    segment_source_slug,
-                    segment_source,
-                ) in definition.spec.segments.data_sources.items():
-                    if segment_source_slug == slug:
-                        return segment_source
+                if not isinstance(definition.spec, MonitoringSpec):
+                    for (
+                        segment_source_slug,
+                        segment_source,
+                    ) in definition.spec.segments.data_sources.items():
+                        if segment_source_slug == slug:
+                            return segment_source
 
         return None
 
     def get_segment_definition(self, slug: str, app_name: str) -> Optional[SegmentDefinition]:
         for definition in self.definitions:
             if app_name == definition.platform:
-                for segment_slug, segment in definition.spec.segments.definitions.items():
-                    if segment_slug == slug:
-                        return segment
+                if not isinstance(definition.spec, MonitoringSpec):
+                    for segment_slug, segment in definition.spec.segments.definitions.items():
+                        if segment_slug == slug:
+                            return segment
 
         return None
 
