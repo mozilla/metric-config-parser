@@ -10,7 +10,7 @@ attrs==22.1.0
     #   jsonschema
     #   mozilla-jetstream-config-parser
     #   pytest
-black==22.6.0
+black==22.10.0
     # via pytest-black
 cattrs==22.1.0
     # via mozilla-jetstream-config-parser
