@@ -51,7 +51,7 @@ markupsafe==2.1.1
 mccabe==0.6.1
     # via flake8
     # via -r -
-mypy==0.971
+mypy==0.982
     # via mozilla-jetstream-config-parser
 mypy-extensions==0.4.3
     # via
