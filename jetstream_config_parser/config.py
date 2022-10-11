@@ -46,7 +46,10 @@ class Config:
         if isinstance(self.spec, AnalysisSpec):
             analysis_spec = AnalysisSpec.default_for_experiment(experiment, configs)
             analysis_spec.merge(self.spec)
-            analysis_spec.resolve(experiment, configs)
+            resolved = analysis_spec.resolve(experiment, configs)
+            # private configs need to override the default dataset
+            if self.is_private and resolved.experiment.dataset_id is None:
+                raise ValueError("dataset_id needs to be explicitly set for private experiments")
         elif isinstance(self.spec, MonitoringSpec):
             monitoring_spec = MonitoringSpec.default_for_platform_or_type(
                 experiment.app_name, configs
@@ -56,10 +59,6 @@ class Config:
                 monitoring_spec.merge(rollout_spec)
             monitoring_spec.merge(self.spec)
             monitoring_spec.resolve(experiment, configs)
-
-        # private configs need to override the default dataset
-        if self.is_private and resolved.experiment.dataset_id is None:
-            raise ValueError("dataset_id needs to be explicitly set for private experiments")
 
 
 def validate_config_settings(config_file: Path) -> None:
