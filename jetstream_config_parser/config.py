@@ -277,7 +277,10 @@ class ConfigCollection:
         """Pull in external config files."""
         # download files to tmp directory
         with TemporaryDirectory() as tmp_dir:
-            repo = Repo.clone_from(repo_url or cls.repo_url, tmp_dir)
+            if repo_url is not None and Path(repo_url).exists() and Path(repo_url).is_dir():
+                repo = Repo(repo_url)
+            else:
+                repo = Repo.clone_from(repo_url or cls.repo_url, tmp_dir)
 
             external_configs = []
 
