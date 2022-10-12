@@ -54,6 +54,7 @@ class DataSource:
     client_id_column = attr.ib(default="client_id", type=str)
     submission_date_column = attr.ib(default="submission_date", type=str)
     default_dataset = attr.ib(default=None, type=Optional[str])
+    build_id_column = attr.ib(default="SAFE.SUBSTR(application.build_id, 0, 8)", type=str)
 
     EXPERIMENT_COLUMN_TYPES = (None, "simple", "native", "glean")
 
@@ -121,6 +122,7 @@ class DataSourceDefinition:
     client_id_column: Optional[str] = "client_id"
     submission_date_column: Optional[str] = "submission_date"
     default_dataset: Optional[str] = None
+    build_id_column: str = "SAFE.SUBSTR(application.build_id, 0, 8)"
 
     def resolve(self, spec: "DefinitionSpecSub") -> DataSource:
         params: Dict[str, Any] = {"name": self.name, "from_expression": self.from_expression}
@@ -130,6 +132,7 @@ class DataSourceDefinition:
             "client_id_column",
             "submission_date_column",
             "default_dataset",
+            "build_id_column",
         ):
             v = getattr(self, k)
             if v:

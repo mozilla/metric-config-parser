@@ -36,7 +36,7 @@ class TestConfigIntegration:
         assert config_collection.functions is not None
 
         default_collection = ConfigCollection.from_github_repo()
-        assert config_collection.configs == default_collection.configs
+        assert len(config_collection.configs) == len(default_collection.configs)
         assert config_collection.outcomes == default_collection.outcomes
-        assert config_collection.defaults == default_collection.defaults
-        assert config_collection.definitions == default_collection.definitions
+        assert len(config_collection.defaults) == len(default_collection.defaults)
+        assert len(config_collection.definitions) == len(default_collection.definitions)

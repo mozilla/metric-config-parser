@@ -52,9 +52,11 @@ class Config:
                 raise ValueError("dataset_id needs to be explicitly set for private experiments")
         elif isinstance(self.spec, MonitoringSpec):
             monitoring_spec = MonitoringSpec.default_for_platform_or_type(
-                experiment.app_name, configs
+                (experiment.app_name if experiment else self.spec.project.platform)
+                or "firefox_desktop",
+                configs,
             )
-            if experiment.is_rollout:
+            if experiment and experiment.is_rollout:
                 rollout_spec = MonitoringSpec.default_for_platform_or_type("rollout", configs)
                 monitoring_spec.merge(rollout_spec)
             monitoring_spec.merge(self.spec)
@@ -79,6 +81,8 @@ def validate_config_settings(config_file: Path) -> None:
     config = toml.loads(config_file.read_text())
 
     optional_core_config_keys = (
+        "project",
+        "population",
         "metrics",
         "experiment",
         "segments",
@@ -86,6 +90,8 @@ def validate_config_settings(config_file: Path) -> None:
         "friendly_name",
         "description",
         "parameters",
+        "alerts",
+        "dimensions",
     )
 
     core_config_keys_specified = config.keys()
@@ -279,6 +285,7 @@ class ConfigCollection:
         with TemporaryDirectory() as tmp_dir:
             if repo_url is not None and Path(repo_url).exists() and Path(repo_url).is_dir():
                 repo = Repo(repo_url)
+                tmp_dir = Path(repo_url)
             else:
                 repo = Repo.clone_from(repo_url or cls.repo_url, tmp_dir)
 
@@ -369,7 +376,7 @@ class ConfigCollection:
         cls, repo_urls: Optional[List[str]] = None, is_private: bool = False
     ) -> "ConfigCollection":
         """Load configs from the provided repos."""
-        if repo_urls is None or len(repo_urls) > 0:
+        if repo_urls is None or len(repo_urls) < 1:
             return ConfigCollection.from_github_repo()
 
         configs = None
@@ -412,6 +419,13 @@ class ConfigCollection:
         for default in self.defaults:
             if platform == default.slug:
                 return default.spec
+
+        return None
+
+    def get_platform_definitions(self, platform: str) -> Optional[DefinitionSpecSub]:
+        for definition in self.definitions:
+            if platform == definition.slug:
+                return definition.spec
 
         return None
 
