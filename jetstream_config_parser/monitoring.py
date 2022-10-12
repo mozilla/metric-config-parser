@@ -64,7 +64,7 @@ class MonitoringSpec:
     ) -> "MonitoringSpec":
         from jetstream_config_parser.definition import DefinitionSpec
 
-        if not isinstance(spec, MonitoringSpec) or not isinstance(spec, DefinitionSpec):
+        if not isinstance(spec, MonitoringSpec) and not isinstance(spec, DefinitionSpec):
             raise ValueError(f"Cannot create MonitoringSpec from {spec}")
 
         if project is None:
@@ -165,7 +165,7 @@ class MonitoringSpec:
         """Return the default config for the provided platform."""
         default_metrics = configs.get_platform_defaults(platform)
 
-        if default_metrics is None:
+        if default_metrics is None or not hasattr(default_metrics, "project"):
             spec = cls()
         else:
             spec = cls.from_definition_spec(default_metrics)

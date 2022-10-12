@@ -72,6 +72,8 @@ class Metric:
     description: Optional[str] = None
     bigger_is_better: bool = True
     analysis_bases: List[AnalysisBasis] = [AnalysisBasis.ENROLLMENTS]
+    type: str = "scalar"
+    category: Optional[str] = None
 
 
 @attr.s(auto_attribs=True)
@@ -115,6 +117,8 @@ class MetricDefinition:
     description: Optional[str] = None
     bigger_is_better: bool = True
     analysis_bases: Optional[List[AnalysisBasis]] = None
+    type: Optional[str] = None
+    category: Optional[str] = None
 
     @staticmethod
     def generate_select_expression(
@@ -189,6 +193,8 @@ class MetricDefinition:
                 description=dedent(self.description) if self.description else self.description,
                 bigger_is_better=self.bigger_is_better,
                 analysis_bases=self.analysis_bases or [AnalysisBasis.ENROLLMENTS],
+                type=self.type or "scalar",
+                category=self.category,
             )
 
         metrics_with_treatments = []
@@ -242,6 +248,11 @@ class MetricDefinition:
             raise ValueError(f"Metric {self.name} has no statistical treatment defined.")
 
         return metrics_with_treatments
+
+    def merge(self, other: "MetricDefinition"):
+        """Merge with another metric definition."""
+        for key in attr.fields_dict(type(self)):
+            setattr(self, key, getattr(other, key) or getattr(self, key))
 
 
 MetricsConfigurationType = Dict[AnalysisPeriod, List[Summary]]
@@ -317,7 +328,15 @@ class MetricsSpec:
         self.weekly += other.weekly
         self.days28 += other.days28
         self.overall += other.overall
-        self.definitions.update(other.definitions)
+
+        seen = []
+        for key, _ in self.definitions.items():
+            if key in other.definitions:
+                self.definitions[key].merge(other.definitions[key])
+            seen.append(key)
+        for key, definition in other.definitions.items():
+            if key not in seen:
+                self.definitions[key] = definition
 
 
 converter.register_structure_hook(MetricsSpec, lambda obj, _type: MetricsSpec.from_dict(obj))

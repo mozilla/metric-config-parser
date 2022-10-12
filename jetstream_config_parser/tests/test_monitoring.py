@@ -4,6 +4,7 @@ from textwrap import dedent
 import pytest
 import toml
 
+from jetstream_config_parser.definition import DefinitionSpec
 from jetstream_config_parser.monitoring import MonitoringConfiguration, MonitoringSpec
 
 TEST_DIR = Path(__file__).parent
@@ -165,6 +166,44 @@ class TestMonitoringSpec:
         assert test.metric.data_source.name == "foo"
         assert test.metric.data_source.from_expression == "bar"
         assert test2.metric.select_expression == "SELECT 2"
+
+    def test_merge_statistic(self, config_collection):
+        """Test merging configs"""
+        config_str = dedent(
+            """
+            [metrics]
+            [metrics.test]
+            select_expression = "SELECT 1"
+            data_source = "foo"
+            type = "histogram"
+
+            [data_sources]
+            [data_sources.foo]
+            from_expression = "test"
+            """
+        )
+        spec = MonitoringSpec.from_definition_spec(DefinitionSpec.from_dict(toml.loads(config_str)))
+
+        config_str = dedent(
+            """
+            [project]
+            name = "foo"
+            metrics = ["test"]
+
+            [metrics.test.statistics]
+            sum = {}
+            """
+        )
+        spec2 = MonitoringSpec.from_dict(toml.loads(config_str))
+        spec.merge(spec2)
+        cfg = spec.resolve(experiment=None, configs=config_collection)
+
+        assert cfg.project.name == "foo"
+        test = [p for p in cfg.metrics if p.metric.name == "test"][0]
+        assert test.metric.select_expression == "SELECT 1"
+        assert test.metric.data_source.name == "foo"
+        assert test.metric.type == "histogram"
+        assert test.statistic.name == "sum"
 
     def test_unknown_metric_failure(self, config_collection):
         config_str = dedent(
