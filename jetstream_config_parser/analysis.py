@@ -116,8 +116,8 @@ class AnalysisSpec:
             self.experiment.merge(other.experiment)
         self.metrics.merge(other.metrics)
         self.data_sources.merge(other.data_sources)
-        if isinstance(other, AnalysisSpec) or isinstance(other, DefinitionSpec):
-            self.segments.merge(other.segments)
+        if isinstance(other, AnalysisSpec) or hasattr(other, "segments"):
+            self.segments.merge(other.segments)  # type: ignore
 
     def merge_outcome(self, other: "OutcomeSpec"):
         """Merges an outcome snippet into the analysis spec."""
