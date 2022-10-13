@@ -3,7 +3,7 @@ from textwrap import dedent
 import pytest
 import toml
 
-from jetstream_config_parser.function import FunctionsSpec
+from metric_config_parser.function import FunctionsSpec
 
 
 class TestFunction:

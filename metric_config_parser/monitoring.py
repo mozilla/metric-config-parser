@@ -4,17 +4,17 @@ from typing import TYPE_CHECKING, Any, List, Mapping, Optional
 import attr
 
 if TYPE_CHECKING:
-    from jetstream_config_parser.config import ConfigCollection
-    from jetstream_config_parser.definition import DefinitionSpecSub
+    from metric_config_parser.config import ConfigCollection
+    from metric_config_parser.definition import DefinitionSpecSub
 
-from jetstream_config_parser.alert import Alert, AlertsSpec
-from jetstream_config_parser.data_source import DataSourcesSpec
-from jetstream_config_parser.dimension import Dimension, DimensionsSpec
-from jetstream_config_parser.experiment import Experiment
-from jetstream_config_parser.metric import MetricsSpec, Summary
-from jetstream_config_parser.parameter import ParameterSpec
-from jetstream_config_parser.project import ProjectConfiguration, ProjectSpec
-from jetstream_config_parser.util import converter
+from metric_config_parser.alert import Alert, AlertsSpec
+from metric_config_parser.data_source import DataSourcesSpec
+from metric_config_parser.dimension import Dimension, DimensionsSpec
+from metric_config_parser.experiment import Experiment
+from metric_config_parser.metric import MetricsSpec, Summary
+from metric_config_parser.parameter import ParameterSpec
+from metric_config_parser.project import ProjectConfiguration, ProjectSpec
+from metric_config_parser.util import converter
 
 
 @attr.s(auto_attribs=True)
@@ -62,7 +62,7 @@ class MonitoringSpec:
         spec: "DefinitionSpecSub",
         project: Optional["ProjectSpec"] = None,
     ) -> "MonitoringSpec":
-        from jetstream_config_parser.definition import DefinitionSpec
+        from metric_config_parser.definition import DefinitionSpec
 
         if not isinstance(spec, MonitoringSpec) and not isinstance(spec, DefinitionSpec):
             raise ValueError(f"Cannot create MonitoringSpec from {spec}")
@@ -146,7 +146,7 @@ class MonitoringSpec:
 
     def merge(self, other: Optional["DefinitionSpecSub"]):
         """Merge another monitoring spec into the current one."""
-        from jetstream_config_parser.definition import DefinitionSpec
+        from metric_config_parser.definition import DefinitionSpec
 
         if other:
             if isinstance(other, MonitoringSpec):

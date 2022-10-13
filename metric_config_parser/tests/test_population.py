@@ -4,8 +4,8 @@ from textwrap import dedent
 import pytz
 import toml
 
-from jetstream_config_parser.monitoring import MonitoringSpec
-from jetstream_config_parser.project import MonitoringPeriod
+from metric_config_parser.monitoring import MonitoringSpec
+from metric_config_parser.project import MonitoringPeriod
 
 
 class TestPopulationSpec:

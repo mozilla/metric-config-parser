@@ -5,10 +5,10 @@ import pytest
 import pytz
 import toml
 
-from jetstream_config_parser.analysis import AnalysisSpec
-from jetstream_config_parser.experiment import Experiment
-from jetstream_config_parser.metric import AnalysisPeriod
-from jetstream_config_parser.outcome import OutcomeSpec
+from metric_config_parser.analysis import AnalysisSpec
+from metric_config_parser.experiment import Experiment
+from metric_config_parser.metric import AnalysisPeriod
+from metric_config_parser.outcome import OutcomeSpec
 
 
 class TestOutcomes:

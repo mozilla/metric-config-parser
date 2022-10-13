@@ -2,8 +2,8 @@ from typing import Any, Mapping, Union
 
 import attr
 
-from jetstream_config_parser.analysis import AnalysisSpec
-from jetstream_config_parser.monitoring import MonitoringSpec
+from metric_config_parser.analysis import AnalysisSpec
+from metric_config_parser.monitoring import MonitoringSpec
 
 from .alert import AlertsSpec
 from .data_source import DataSourcesSpec

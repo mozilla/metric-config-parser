@@ -4,13 +4,13 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 import attr
 
 if TYPE_CHECKING:
-    from jetstream_config_parser.config import ConfigCollection
-    from jetstream_config_parser.monitoring import MonitoringSpec
-    from jetstream_config_parser.definition import DefinitionSpecSub
-    from jetstream_config_parser.project import ProjectConfiguration
+    from metric_config_parser.config import ConfigCollection
+    from metric_config_parser.monitoring import MonitoringSpec
+    from metric_config_parser.definition import DefinitionSpecSub
+    from metric_config_parser.project import ProjectConfiguration
 
-from jetstream_config_parser.metric import MetricReference, Summary
-from jetstream_config_parser.util import converter
+from metric_config_parser.metric import MetricReference, Summary
+from metric_config_parser.util import converter
 
 
 # todo: probably should just be a string

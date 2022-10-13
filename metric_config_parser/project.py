@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING, Any, List, Optional
 import attr
 
 if TYPE_CHECKING:
-    from jetstream_config_parser.config import ConfigCollection
-    from jetstream_config_parser.monitoring import MonitoringSpec
+    from metric_config_parser.config import ConfigCollection
+    from metric_config_parser.monitoring import MonitoringSpec
 
-from jetstream_config_parser.alert import AlertReference
-from jetstream_config_parser.experiment import Experiment
-from jetstream_config_parser.metric import MetricReference
-from jetstream_config_parser.population import PopulationConfiguration, PopulationSpec
-from jetstream_config_parser.util import converter, parse_date
+from metric_config_parser.alert import AlertReference
+from metric_config_parser.experiment import Experiment
+from metric_config_parser.metric import MetricReference
+from metric_config_parser.population import PopulationConfiguration, PopulationSpec
+from metric_config_parser.util import converter, parse_date
 
 
 class MonitoringPeriod(enum.Enum):

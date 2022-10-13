@@ -4,12 +4,12 @@ from textwrap import dedent
 import pytest
 import toml
 
-from jetstream_config_parser.analysis import AnalysisConfiguration, AnalysisSpec
-from jetstream_config_parser.data_source import DataSource
-from jetstream_config_parser.errors import InvalidConfigurationException
-from jetstream_config_parser.exposure_signal import AnalysisWindow, ExposureSignal
-from jetstream_config_parser.metric import AnalysisBasis, AnalysisPeriod
-from jetstream_config_parser.parameter import ParameterDefinition, ParameterSpec
+from metric_config_parser.analysis import AnalysisConfiguration, AnalysisSpec
+from metric_config_parser.data_source import DataSource
+from metric_config_parser.errors import InvalidConfigurationException
+from metric_config_parser.exposure_signal import AnalysisWindow, ExposureSignal
+from metric_config_parser.metric import AnalysisBasis, AnalysisPeriod
+from metric_config_parser.parameter import ParameterDefinition, ParameterSpec
 
 TEST_DIR = Path(__file__).parent
 DEFAULT_METRICS_CONFIG = TEST_DIR / "data" / "default_metrics.toml"

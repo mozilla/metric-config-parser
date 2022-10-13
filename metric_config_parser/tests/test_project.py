@@ -3,7 +3,7 @@ from textwrap import dedent
 import pytest
 import toml
 
-from jetstream_config_parser.monitoring import MonitoringSpec
+from metric_config_parser.monitoring import MonitoringSpec
 
 
 class TestProjectSpec:

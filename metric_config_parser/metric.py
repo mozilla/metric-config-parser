@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 import attr
 import jinja2
 
-from jetstream_config_parser.errors import DefinitionNotFound
+from metric_config_parser.errors import DefinitionNotFound
 
 if TYPE_CHECKING:
     from .analysis import AnalysisSpec
@@ -59,9 +59,9 @@ class Summary:
 @attr.s(auto_attribs=True, frozen=True, slots=True)
 class Metric:
     """
-    Jetstream metric representation.
+    Metric representation.
 
-    Jetstream metrics are supersets of mozanalysis metrics with additional
+    Metrics are supersets of mozanalysis metrics with additional
     metadata required for analysis.
     """
 

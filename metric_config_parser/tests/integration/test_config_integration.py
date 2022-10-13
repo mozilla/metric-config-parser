@@ -1,4 +1,4 @@
-from jetstream_config_parser.config import ConfigCollection
+from metric_config_parser.config import ConfigCollection
 
 
 class TestConfigIntegration:
