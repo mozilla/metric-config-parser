@@ -6,9 +6,9 @@ import pytest
 import pytz
 import toml
 
-from jetstream_config_parser.analysis import AnalysisSpec
-from jetstream_config_parser.metric import AnalysisPeriod
-from jetstream_config_parser.segment import Segment
+from metric_config_parser.analysis import AnalysisSpec
+from metric_config_parser.metric import AnalysisPeriod
+from metric_config_parser.segment import Segment
 
 TEST_DIR = Path(__file__).parent
 DEFAULT_METRICS_CONFIG = TEST_DIR / "data" / "default_metrics.toml"

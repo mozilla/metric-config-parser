@@ -4,8 +4,8 @@ from textwrap import dedent
 import pytest
 import toml
 
-from jetstream_config_parser.definition import DefinitionSpec
-from jetstream_config_parser.monitoring import MonitoringConfiguration, MonitoringSpec
+from metric_config_parser.definition import DefinitionSpec
+from metric_config_parser.monitoring import MonitoringConfiguration, MonitoringSpec
 
 TEST_DIR = Path(__file__).parent
 DEFAULT_METRICS_CONFIG = TEST_DIR / "data" / "default_metrics.toml"

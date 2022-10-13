@@ -26,13 +26,13 @@ jobs:
           venv/bin/pip install --progress-bar off --upgrade -r requirements.txt
     - run:
         name: PyTest
-        command: venv/bin/pytest --black --flake8 --ignore=jetstream_config_parser/tests/integration/
+        command: venv/bin/pytest --black --flake8 --ignore=metric_config_parser/tests/integration/
     - run:
         name: isort
-        command: venv/bin/isort --check jetstream_config_parser
+        command: venv/bin/isort --check metric_config_parser
     - run:
         name: Mypy
-        command: venv/bin/mypy jetstream_config_parser
+        command: venv/bin/mypy metric_config_parser
     - save_cache:
         paths:
         - venv/
@@ -46,7 +46,7 @@ jobs:
     - run:
         name: PyTest Integration Test
         command: |
-          venv/bin/pytest --black --flake8 jetstream_config_parser/tests/integration/
+          venv/bin/pytest --black --flake8 metric_config_parser/tests/integration/
   deploy:
     docker:
       - image: python:3.8-buster
@@ -64,7 +64,7 @@ jobs:
           name: Upload to PyPI
           command: |
             # Relies on the TWINE_USERNAME and TWINE_PASSWORD environment variables configured at:
-            #   https://circleci.com/gh/mozilla/jetstream-config-parser/edit#env-vars
+            #   https://circleci.com/gh/mozilla/metric-config-parser/edit#env-vars
             # For more on twine, see:
             #   https://twine.readthedocs.io/en/latest/
             twine upload --skip-existing dist/*

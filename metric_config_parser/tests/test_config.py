@@ -6,16 +6,16 @@ import pytest
 import pytz
 import toml
 
-from jetstream_config_parser.analysis import AnalysisSpec
-from jetstream_config_parser.config import (
+from metric_config_parser.analysis import AnalysisSpec
+from metric_config_parser.config import (
     Config,
     ConfigCollection,
     DefaultConfig,
     DefinitionConfig,
     Outcome,
 )
-from jetstream_config_parser.errors import DefinitionNotFound
-from jetstream_config_parser.outcome import OutcomeSpec
+from metric_config_parser.errors import DefinitionNotFound
+from metric_config_parser.outcome import OutcomeSpec
 
 TEST_DIR = Path(__file__).parent
 DEFAULT_METRICS_CONFIG = TEST_DIR / "data" / "default_metrics.toml"

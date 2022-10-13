@@ -2,10 +2,10 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import attr
 
-from jetstream_config_parser.errors import DefinitionNotFound
+from metric_config_parser.errors import DefinitionNotFound
 
 if TYPE_CHECKING:
-    from jetstream_config_parser.config import ConfigCollection
+    from metric_config_parser.config import ConfigCollection
     from .experiment import ExperimentConfiguration
     from .definition import DefinitionSpecSub
     from .project import ProjectConfiguration

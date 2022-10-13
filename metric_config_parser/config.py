@@ -10,14 +10,11 @@ from git import Repo
 from jinja2 import StrictUndefined
 from pytz import UTC
 
-from jetstream_config_parser.data_source import DataSourceDefinition
-from jetstream_config_parser.definition import DefinitionSpec, DefinitionSpecSub
-from jetstream_config_parser.function import FunctionsSpec
-from jetstream_config_parser.monitoring import MonitoringSpec
-from jetstream_config_parser.segment import (
-    SegmentDataSourceDefinition,
-    SegmentDefinition,
-)
+from metric_config_parser.data_source import DataSourceDefinition
+from metric_config_parser.definition import DefinitionSpec, DefinitionSpecSub
+from metric_config_parser.function import FunctionsSpec
+from metric_config_parser.monitoring import MonitoringSpec
+from metric_config_parser.segment import SegmentDataSourceDefinition, SegmentDefinition
 
 from .analysis import AnalysisSpec
 from .errors import UnexpectedKeyConfigurationException

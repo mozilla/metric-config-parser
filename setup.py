@@ -30,18 +30,18 @@ extras = {
 }
 
 setup(
-    name="mozilla-jetstream-config-parser",
+    name="mozilla-metric-config-parser",
     author="Mozilla Corporation",
     author_email="fx-data-dev@mozilla.org",
-    description="Parses jetstream configuration files",
-    url="https://github.com/mozilla/jetstream-config-parser",
+    description="Parses metric configuration files",
+    url="https://github.com/mozilla/metric-config-parser",
     packages=[
-        "jetstream_config_parser",
-        "jetstream_config_parser.tests",
-        "jetstream_config_parser.tests.integration",
+        "metric_config_parser",
+        "metric_config_parser.tests",
+        "metric_config_parser.tests.integration",
     ],
     package_data={
-        "jetstream_config_parser.tests": ["data/*"],
+        "metric_config_parser.tests": ["data/*"],
     },
     install_requires=[
         "attrs",

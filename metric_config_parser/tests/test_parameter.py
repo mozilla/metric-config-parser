@@ -1,4 +1,4 @@
-from jetstream_config_parser.parameter import ParameterDefinition, ParameterSpec
+from metric_config_parser.parameter import ParameterDefinition, ParameterSpec
 
 
 class TestParameterSpec:

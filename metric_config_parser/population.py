@@ -3,13 +3,13 @@ from typing import TYPE_CHECKING, List, Optional
 import attr
 
 if TYPE_CHECKING:
-    from jetstream_config_parser.config import ConfigCollection
-    from jetstream_config_parser.monitoring import MonitoringSpec
-    from jetstream_config_parser.project import ProjectConfiguration
+    from metric_config_parser.config import ConfigCollection
+    from metric_config_parser.monitoring import MonitoringSpec
+    from metric_config_parser.project import ProjectConfiguration
 
-from jetstream_config_parser.data_source import DataSource, DataSourceReference
-from jetstream_config_parser.dimension import Dimension, DimensionReference
-from jetstream_config_parser.experiment import Channel
+from metric_config_parser.data_source import DataSource, DataSourceReference
+from metric_config_parser.dimension import Dimension, DimensionReference
+from metric_config_parser.experiment import Channel
 
 
 @attr.s(auto_attribs=True, kw_only=True)
