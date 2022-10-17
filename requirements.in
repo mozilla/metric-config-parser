@@ -32,7 +32,7 @@ flake8==4.0.1
     # via pytest-flake8
 gitdb==4.0.9
     # via gitpython
-gitpython==3.1.27
+gitpython==3.1.29
     # via mozilla-jetstream-config-parser
 idna==3.3
     # via requests
