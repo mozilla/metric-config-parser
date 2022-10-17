@@ -44,6 +44,11 @@ class DimensionDefinition:
             description=self.description,
         )
 
+    def merge(self, other: "DimensionDefinition"):
+        """Merge with another dimension definition."""
+        for key in attr.fields_dict(type(self)):
+            setattr(self, key, getattr(other, key) or getattr(self, key))
+
 
 @attr.s(auto_attribs=True)
 class DimensionsSpec:
@@ -67,7 +72,14 @@ class DimensionsSpec:
 
         The `other` DimensionsSpec overwrites existing keys.
         """
-        self.definitions.update(other.definitions)
+        seen = []
+        for key, _ in self.definitions.items():
+            if key in other.definitions:
+                self.definitions[key].merge(other.definitions[key])
+            seen.append(key)
+        for key, definition in other.definitions.items():
+            if key not in seen:
+                self.definitions[key] = definition
 
 
 converter.register_structure_hook(DimensionsSpec, lambda obj, _type: DimensionsSpec.from_dict(obj))
