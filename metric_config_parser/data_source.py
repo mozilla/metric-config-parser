@@ -55,6 +55,8 @@ class DataSource:
     submission_date_column = attr.ib(default="submission_date", type=str)
     default_dataset = attr.ib(default=None, type=Optional[str])
     build_id_column = attr.ib(default="SAFE.SUBSTR(application.build_id, 0, 8)", type=str)
+    friendly_name = attr.ib(default=None, type=str)
+    description = attr.ib(default=None, type=str)
 
     EXPERIMENT_COLUMN_TYPES = (None, "simple", "native", "glean")
 
@@ -117,12 +119,14 @@ class DataSourceDefinition:
     """Describes the interface for defining a data source in configuration."""
 
     name: str  # implicit in configuration
-    from_expression: Optional[str]
+    from_expression: Optional[str] = None
     experiments_column_type: Optional[str] = None
     client_id_column: Optional[str] = None
     submission_date_column: Optional[str] = None
     default_dataset: Optional[str] = None
     build_id_column: Optional[str] = None
+    friendly_name: Optional[str] = None
+    description: Optional[str] = None
 
     def resolve(self, spec: "DefinitionSpecSub") -> DataSource:
         params: Dict[str, Any] = {"name": self.name, "from_expression": self.from_expression}
@@ -133,6 +137,8 @@ class DataSourceDefinition:
             "submission_date_column",
             "default_dataset",
             "build_id_column",
+            "friendly_name",
+            "description",
         ):
             v = getattr(self, k)
             if v:
