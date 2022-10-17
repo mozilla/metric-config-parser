@@ -205,6 +205,52 @@ class TestMonitoringSpec:
         assert test.metric.type == "histogram"
         assert test.statistic.name == "sum"
 
+    def test_merge_data_source(self, config_collection):
+        """Test merging configs with data sources"""
+        config_str = dedent(
+            """
+            [metrics]
+            [metrics.test]
+            select_expression = "SELECT 1"
+            data_source = "foo"
+            type = "histogram"
+
+            [metrics.test.statistics]
+            sum = {}
+
+            [data_sources]
+            [data_sources.foo]
+            from_expression = "test"
+            build_id_column = "test"
+            """
+        )
+        spec = MonitoringSpec.from_definition_spec(DefinitionSpec.from_dict(toml.loads(config_str)))
+
+        config_str = dedent(
+            """
+            [project]
+            name = "foo"
+            metrics = ["test"]
+
+            [data_sources]
+            [data_sources.foo]
+            from_expression = "foo"
+            """
+        )
+
+        spec2 = MonitoringSpec.from_dict(toml.loads(config_str))
+        spec.merge(spec2)
+
+        assert spec.data_sources.definitions["foo"].name == "foo"
+        assert spec.data_sources.definitions["foo"].from_expression == "foo"
+        assert spec.data_sources.definitions["foo"].build_id_column == "test"
+
+        cfg = spec.resolve(experiment=None, configs=config_collection)
+
+        test = [p for p in cfg.metrics if p.metric.name == "test"][0]
+        assert test.metric.data_source.name == "foo"
+        assert test.metric.data_source.from_expression == "foo"
+
     def test_unknown_metric_failure(self, config_collection):
         config_str = dedent(
             """

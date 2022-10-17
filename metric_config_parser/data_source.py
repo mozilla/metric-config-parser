@@ -117,12 +117,12 @@ class DataSourceDefinition:
     """Describes the interface for defining a data source in configuration."""
 
     name: str  # implicit in configuration
-    from_expression: str
+    from_expression: Optional[str]
     experiments_column_type: Optional[str] = None
-    client_id_column: Optional[str] = "client_id"
-    submission_date_column: Optional[str] = "submission_date"
+    client_id_column: Optional[str] = None
+    submission_date_column: Optional[str] = None
     default_dataset: Optional[str] = None
-    build_id_column: str = "SAFE.SUBSTR(application.build_id, 0, 8)"
+    build_id_column: Optional[str] = None
 
     def resolve(self, spec: "DefinitionSpecSub") -> DataSource:
         params: Dict[str, Any] = {"name": self.name, "from_expression": self.from_expression}
@@ -146,6 +146,11 @@ class DataSourceDefinition:
         if (self.experiments_column_type or "").lower() == "none":
             params["experiments_column_type"] = None
         return DataSource(**params)
+
+    def merge(self, other: "DataSourceDefinition"):
+        """Merge with another data source definition."""
+        for key in attr.fields_dict(type(self)):
+            setattr(self, key, getattr(other, key) or getattr(self, key))
 
 
 @attr.s(auto_attribs=True)
@@ -172,7 +177,14 @@ class DataSourcesSpec:
         Merge another datasource spec into the current one.
         The `other` DataSourcesSpec overwrites existing keys.
         """
-        self.definitions.update(other.definitions)
+        seen = []
+        for key, _ in self.definitions.items():
+            if key in other.definitions:
+                self.definitions[key].merge(other.definitions[key])
+            seen.append(key)
+        for key, definition in other.definitions.items():
+            if key not in seen:
+                self.definitions[key] = definition
 
 
 converter.register_structure_hook(
