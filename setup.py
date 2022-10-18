@@ -59,5 +59,9 @@ setup(
     long_description=text_from_file("README.md"),
     long_description_content_type="text/markdown",
     python_requires=">=3.6",
-    version="2022.10.7",
+    entry_points="""
+        [console_scripts]
+        metric-config-parser=metric_config_parser.cli:cli
+    """,
+    version="2022.10.8",
 )

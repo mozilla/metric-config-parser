@@ -60,6 +60,9 @@ class DataSource:
 
     EXPERIMENT_COLUMN_TYPES = (None, "simple", "native", "glean")
 
+    def __attrs_post_init__(self):
+        object.__setattr__(self, "from_expression", self.from_expr_for(self.default_dataset))
+
     @experiments_column_type.validator
     def _check_experiments_column_type(self, attribute, value):
         if value not in self.EXPERIMENT_COLUMN_TYPES:
