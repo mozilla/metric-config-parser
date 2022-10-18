@@ -132,6 +132,9 @@ class AnalysisSpec:
         )
         self.data_sources.merge(other.data_sources)
 
+        if other.parameters:
+            self.merge_parameters(other.parameters)
+
     @staticmethod
     def _merge_param(
         param_1: "ParameterDefinition", param_2: "ParameterDefinition"
