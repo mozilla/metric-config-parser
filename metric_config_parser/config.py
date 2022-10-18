@@ -89,6 +89,7 @@ def validate_config_settings(config_file: Path) -> None:
         "parameters",
         "alerts",
         "dimensions",
+        "functions",
     )
 
     core_config_keys_specified = config.keys()
@@ -200,7 +201,7 @@ class DefinitionConfig(Config):
 
 def entity_from_path(
     path: Path, is_private: bool = False
-) -> Union[Config, Outcome, DefaultConfig, DefinitionConfig]:
+) -> Union[Config, Outcome, DefaultConfig, DefinitionConfig, FunctionsSpec]:
     is_outcome = path.parent.parent.name == OUTCOMES_DIR
     is_default_config = path.parent.name == DEFAULTS_DIR
     is_definition_config = path.parent.name == DEFINITIONS_DIR
@@ -233,13 +234,16 @@ def entity_from_path(
                 is_private=is_private,
             )
     elif is_definition_config:
-        return DefinitionConfig(
-            slug=slug,
-            spec=DefinitionSpec.from_dict(config_dict),
-            last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
-            platform=slug,
-            is_private=is_private,
-        )
+        if path.name == FUNCTIONS_FILE:
+            return FunctionsSpec.from_dict(config_dict)
+        else:
+            return DefinitionConfig(
+                slug=slug,
+                spec=DefinitionSpec.from_dict(config_dict),
+                last_modified=dt.datetime.fromtimestamp(path.stat().st_mtime, UTC),
+                platform=slug,
+                is_private=is_private,
+            )
 
     if "project" in config_dict:
         # config is from opmon
