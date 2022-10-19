@@ -293,7 +293,7 @@ class ConfigCollection:
             external_configs = []
 
             for config_file in tmp_dir.glob("*.toml"):
-                last_modified = next(repo.iter_commits("main", paths=config_file)).committed_date
+                last_modified = next(repo.iter_commits("HEAD", paths=config_file)).committed_date
                 config_json = toml.load(config_file)
 
                 if "project" in config_json:
@@ -314,7 +314,7 @@ class ConfigCollection:
 
             outcomes = []
             for outcome_file in tmp_dir.glob(f"**/{OUTCOMES_DIR}/*/*.toml"):
-                commit_hash = next(repo.iter_commits("main", paths=outcome_file)).hexsha
+                commit_hash = next(repo.iter_commits("HEAD", paths=outcome_file)).hexsha
 
                 outcomes.append(
                     Outcome(
@@ -329,7 +329,7 @@ class ConfigCollection:
             default_configs = []
             for default_config_file in tmp_dir.glob(f"**/{DEFAULTS_DIR}/*.toml"):
                 last_modified = next(
-                    repo.iter_commits("main", paths=default_config_file)
+                    repo.iter_commits("HEAD", paths=default_config_file)
                 ).committed_date
 
                 default_config_json = toml.load(default_config_file)
@@ -353,7 +353,7 @@ class ConfigCollection:
             definitions = []
             for definitions_config_file in tmp_dir.glob(f"**/{DEFINITIONS_DIR}/*.toml"):
                 last_modified = next(
-                    repo.iter_commits("main", paths=definitions_config_file)
+                    repo.iter_commits("HEAD", paths=definitions_config_file)
                 ).committed_date
 
                 definitions.append(
