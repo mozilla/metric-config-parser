@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 from metric_config_parser.alert import AlertReference
 from metric_config_parser.experiment import Experiment
 from metric_config_parser.metric import MetricReference
+from metric_config_parser.metric_group import MetricGroup, MetricGroupsSpec
 from metric_config_parser.population import PopulationConfiguration, PopulationSpec
 from metric_config_parser.util import converter, parse_date
 
@@ -41,6 +42,7 @@ class ProjectConfiguration:
     skip_default_metrics: bool = False
     skip: bool = False
     is_rollout: bool = False
+    metric_groups: List[MetricGroup] = attr.Factory(list)
 
 
 def _validate_yyyy_mm_dd(instance: Any, attribute: Any, value: Any) -> None:
@@ -64,6 +66,7 @@ class ProjectSpec:
     skip_default_metrics: bool = False
     skip: bool = False
     is_rollout: bool = False
+    metric_groups: MetricGroupsSpec = attr.Factory(MetricGroupsSpec)
 
     @classmethod
     def from_dict(cls, d: dict) -> "ProjectSpec":
@@ -109,8 +112,16 @@ class ProjectSpec:
             skip=self.skip,
             app_name=self.platform or "firefox_desktop",
             is_rollout=self.is_rollout,
+            metric_groups=[],
         )
         project_config.population = self.population.resolve(spec, project_config, configs)
+
+        metric_groups = []
+        for group_ref in [d for _, d in self.metric_groups.definitions.items()]:
+            metric_groups.append(group_ref.resolve(spec, project_config, configs))
+
+        project_config.metric_groups = metric_groups
+
         return project_config
 
     def merge(self, other: "ProjectSpec") -> None:
@@ -126,5 +137,7 @@ class ProjectSpec:
                 self.metrics += other.metrics
             elif key == "alerts":
                 self.alerts += other.alerts
+            elif key == "metric_groups":
+                self.metric_groups.merge(other.metric_groups)
             else:
                 setattr(self, key, getattr(other, key) or getattr(self, key))
