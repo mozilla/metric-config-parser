@@ -26,7 +26,7 @@ coverage[toml]==6.4.3
     # via
     #   mozilla-jetstream-config-parser
     #   pytest-cov
-exceptiongroup==1.0.0rc8
+exceptiongroup==1.0.0
     # via cattrs
 flake8==4.0.1
     # via pytest-flake8
