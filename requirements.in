@@ -77,7 +77,7 @@ pyparsing==3.0.9
     # via packaging
 pyrsistent==0.18.1
     # via jsonschema
-pytest==7.1.2
+pytest==7.2.0
     # via
     #   mozilla-jetstream-config-parser
     #   pytest-black
