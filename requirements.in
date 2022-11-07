@@ -75,7 +75,7 @@ pyflakes==2.4.0
     # via flake8
 pyparsing==3.0.9
     # via packaging
-pyrsistent==0.18.1
+pyrsistent==0.19.2
     # via jsonschema
 pytest==7.1.2
     # via
