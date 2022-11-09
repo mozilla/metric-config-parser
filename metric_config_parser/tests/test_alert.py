@@ -2,6 +2,7 @@ from textwrap import dedent
 
 import pytest
 import toml
+from cattrs.errors import ClassValidationError
 
 from metric_config_parser.metric import MetricReference
 from metric_config_parser.monitoring import MonitoringSpec
@@ -53,7 +54,7 @@ class TestAlertSpec:
             """
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ClassValidationError):
             MonitoringSpec.from_dict(toml.loads(config_str))
 
     def test_alert_incorrect_config(self):
@@ -69,7 +70,7 @@ class TestAlertSpec:
             """
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ClassValidationError):
             MonitoringSpec.from_dict(toml.loads(config_str))
 
     def test_alert_incorrect_number_of_thresholds(self):
@@ -88,5 +89,5 @@ class TestAlertSpec:
             """
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ClassValidationError):
             MonitoringSpec.from_dict(toml.loads(config_str))

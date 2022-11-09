@@ -3,6 +3,7 @@ from textwrap import dedent
 
 import pytest
 import toml
+from cattrs.errors import ClassValidationError
 
 from metric_config_parser.analysis import AnalysisConfiguration, AnalysisSpec
 from metric_config_parser.data_source import DataSource
@@ -30,7 +31,7 @@ class TestAnalysisSpec:
             weekly = "my_cool_metric"
             """
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ClassValidationError):
             AnalysisSpec.from_dict(toml.loads(config_str))
 
     def test_template_expansion(self, experiments, config_collection):
