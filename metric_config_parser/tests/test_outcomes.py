@@ -4,6 +4,7 @@ from textwrap import dedent
 import pytest
 import pytz
 import toml
+from cattrs.errors import ClassValidationError
 
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.experiment import Experiment
@@ -292,7 +293,7 @@ class TestOutcomes:
             """
         )
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ClassValidationError):
             AnalysisSpec.from_dict(toml.loads(config_str))
 
     def test_unsupported_platform_outcomes(self, config_collection):

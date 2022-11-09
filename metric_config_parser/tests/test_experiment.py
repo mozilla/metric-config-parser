@@ -5,6 +5,7 @@ from textwrap import dedent
 import pytest
 import pytz
 import toml
+from cattrs.errors import ClassValidationError
 
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.metric import AnalysisPeriod
@@ -185,7 +186,7 @@ class TestExperimentConf:
             end_date = "Christmas"
             """
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ClassValidationError):
             AnalysisSpec.from_dict(toml.loads(conf))
 
         conf = dedent(
@@ -194,7 +195,7 @@ class TestExperimentConf:
             start_date = "My birthday"
             """
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ClassValidationError):
             AnalysisSpec.from_dict(toml.loads(conf))
 
     def test_good_end_date(self, experiments, config_collection):
@@ -251,7 +252,7 @@ class TestExperimentConf:
             is_private = true
             """
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ClassValidationError):
             AnalysisSpec.from_dict(toml.loads(conf))
 
     def test_private_experiment(self, experiments, config_collection):

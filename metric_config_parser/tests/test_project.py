@@ -2,6 +2,7 @@ from textwrap import dedent
 
 import pytest
 import toml
+from cattrs.errors import ClassValidationError
 
 from metric_config_parser.metric import MetricReference
 from metric_config_parser.monitoring import MonitoringSpec
@@ -44,7 +45,7 @@ class TestProjectSpec:
             """
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ClassValidationError):
             MonitoringSpec.from_dict(toml.loads(config_str))
 
     def test_bad_project_xaxis(self):
@@ -55,7 +56,7 @@ class TestProjectSpec:
             """
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ClassValidationError):
             MonitoringSpec.from_dict(toml.loads(config_str))
 
     def test_metric_groups(self, config_collection):
