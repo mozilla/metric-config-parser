@@ -381,13 +381,13 @@ class ConfigCollection:
             return ConfigCollection.from_github_repo()
 
         configs = None
+
         for repo in repo_urls:
             if configs is None:
                 configs = ConfigCollection.from_github_repo(repo, is_private=is_private)
             else:
                 collection = ConfigCollection.from_github_repo(repo, is_private=is_private)
                 configs.merge(collection)
-
         return configs or ConfigCollection.from_github_repo()
 
     def spec_for_outcome(self, slug: str, platform: str) -> Optional[OutcomeSpec]:
@@ -513,6 +513,8 @@ class ConfigCollection:
         for outcome in self.outcomes:
             if outcome.slug not in slugs:
                 outcomes.append(outcome)
+
+        self.outcomes = outcomes
 
         # merge definitions
         other_definitions = {
