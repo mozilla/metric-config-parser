@@ -275,7 +275,7 @@ class ConfigCollection:
     definitions: List[DefinitionConfig] = attr.Factory(list)
     functions: Optional[FunctionsSpec] = None
 
-    repo_url = "https://github.com/mozilla/jetstream-config"
+    repo_url = "https://github.com/mozilla/metric-hub"
 
     @classmethod
     def from_github_repo(

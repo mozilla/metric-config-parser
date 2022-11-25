@@ -3,7 +3,9 @@ from metric_config_parser.config import ConfigCollection
 
 class TestConfigIntegration:
     def test_configs_from_repo(self):
-        config_collection = ConfigCollection.from_github_repo()
+        config_collection = ConfigCollection.from_github_repos(
+            ["https://github.com/mozilla/metric-hub", "https://github.com/mozilla/jetstream-config"]
+        )
         assert config_collection is not None
         assert config_collection.get_platform_defaults("firefox_desktop") is not None
         assert (
@@ -24,7 +26,9 @@ class TestConfigIntegration:
         )
 
     def test_configs_from_private_repo(self):
-        config_collection = ConfigCollection.from_github_repo(is_private=True)
+        config_collection = ConfigCollection.from_github_repo(
+            "https://github.com/mozilla/jetstream-config", is_private=True
+        )
         assert config_collection is not None
         assert config_collection.configs[0].spec.experiment.is_private
 
