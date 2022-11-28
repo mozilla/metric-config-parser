@@ -46,7 +46,7 @@ isort==5.10.1
     # via mozilla-metric-config-parser
 jinja2==3.1.2
     # via mozilla-metric-config-parser
-jsonschema==4.17.0
+jsonschema==4.17.1
     # via mozilla-metric-config-parser
 markupsafe==2.1.1
     # via jinja2
