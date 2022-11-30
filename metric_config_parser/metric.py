@@ -71,7 +71,7 @@ class Metric:
     friendly_name: Optional[str] = None
     description: Optional[str] = None
     bigger_is_better: bool = True
-    analysis_bases: List[AnalysisBasis] = [AnalysisBasis.ENROLLMENTS]
+    analysis_bases: List[AnalysisBasis] = [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]
     type: str = "scalar"
     category: Optional[str] = None
 
