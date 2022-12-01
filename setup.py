@@ -63,5 +63,5 @@ setup(
         [console_scripts]
         metric-config-parser=metric_config_parser.cli:cli
     """,
-    version="2022.11.4",
+    version="2022.11.5",
 )
