@@ -317,7 +317,7 @@ class TestAnalysisSpec:
         assert len(cfg.metrics[AnalysisPeriod.WEEK]) == 1
         assert spam.metric.data_source.name == "main"
         assert spam.metric.select_expression == "2"
-        assert spam.metric.analysis_bases == [AnalysisBasis.ENROLLMENTS]
+        assert spam.metric.analysis_bases == [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]
         assert spam.statistic.name == "bootstrap_mean"
         assert spam.statistic.params["num_samples"] == 100
 
@@ -341,6 +341,7 @@ class TestAnalysisSpec:
         metric = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][0].metric
 
         assert AnalysisBasis.EXPOSURES in metric.analysis_bases
+        assert AnalysisBasis.ENROLLMENTS not in metric.analysis_bases
 
     def test_exposure_and_enrollments_based_metric(self, experiments, config_collection):
         config_str = dedent(
