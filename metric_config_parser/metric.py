@@ -176,7 +176,7 @@ class MetricDefinition:
 
             metric_definition.analysis_bases = self.analysis_bases or [
                 AnalysisBasis.ENROLLMENTS,
-                AnalysisBasis.EXPOSURES
+                AnalysisBasis.EXPOSURES,
             ]
             metric_definition.statistics = self.statistics
             metric_summary = metric_definition.resolve(spec, conf, configs)
