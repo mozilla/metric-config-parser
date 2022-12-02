@@ -174,7 +174,7 @@ class MetricDefinition:
                     f"No default definition found for referenced metric {self.name}"
                 )
 
-            metric_definition.analysis_bases = self.analysis_bases or [AnalysisBasis.ENROLLMENTS]
+            metric_definition.analysis_bases = self.analysis_bases or [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]
             metric_definition.statistics = self.statistics
             metric_summary = metric_definition.resolve(spec, conf, configs)
         else:
@@ -193,7 +193,7 @@ class MetricDefinition:
                 else self.friendly_name,
                 description=dedent(self.description) if self.description else self.description,
                 bigger_is_better=self.bigger_is_better,
-                analysis_bases=self.analysis_bases or [AnalysisBasis.ENROLLMENTS],
+                analysis_bases=self.analysis_bases or [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES],
                 type=self.type or "scalar",
                 category=self.category,
             )
