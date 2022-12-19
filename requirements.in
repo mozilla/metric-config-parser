@@ -89,7 +89,7 @@ pytest-cov==4.0.0
     # via mozilla-metric-config-parser
 pytest-flake8==1.1.1
     # via mozilla-metric-config-parser
-pytz==2022.6
+pytz==2022.7
     # via mozilla-metric-config-parser
 requests==2.28.1
     # via mozilla-metric-config-parser
