@@ -1,4 +1,3 @@
-from pathlib import Path
 from textwrap import dedent
 
 import pytest
@@ -6,9 +5,6 @@ import toml
 
 from metric_config_parser.definition import DefinitionSpec
 from metric_config_parser.monitoring import MonitoringConfiguration, MonitoringSpec
-
-TEST_DIR = Path(__file__).parent
-DEFAULT_METRICS_CONFIG = TEST_DIR / "data" / "jetstream" / "defaults" / "firefox_desktop.toml"
 
 
 class TestMonitoringSpec:

@@ -7,6 +7,8 @@ class TestConfigIntegration:
             ["https://github.com/mozilla/metric-hub"]
         )
         assert config_collection is not None
+        assert config_collection.get_platform_defaults("firefox_desktop") is None
+        assert config_collection.spec_for_outcome("test", "firefox_desktop") is None
         assert (
             config_collection.get_data_source_definition("clients_daily", "firefox_desktop")
             is not None
@@ -30,3 +32,20 @@ class TestConfigIntegration:
         assert config_collection.outcomes == default_collection.outcomes
         assert len(config_collection.defaults) == len(default_collection.defaults)
         assert len(config_collection.definitions) == len(default_collection.definitions)
+
+    def test_config_from_repo_tree(self):
+        config_collection = ConfigCollection.from_github_repo(
+            "https://github.com/mozilla/metric-hub/tree/main/jetstream"
+        )
+        assert config_collection.configs is not None
+
+    def test_config_from_repo_tree_multiple(self):
+        config_collection = ConfigCollection.from_github_repos(
+            repo_urls=[
+                ConfigCollection.repo_url,
+                "https://github.com/mozilla/metric-hub/tree/main/jetstream",
+            ]
+        )
+
+        assert config_collection.configs is not None
+        assert len(config_collection.definitions) > 0

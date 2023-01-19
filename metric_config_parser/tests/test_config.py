@@ -1,5 +1,4 @@
 import datetime
-from pathlib import Path
 from textwrap import dedent
 
 import pytest
@@ -16,9 +15,6 @@ from metric_config_parser.config import (
 )
 from metric_config_parser.errors import DefinitionNotFound
 from metric_config_parser.outcome import OutcomeSpec
-
-TEST_DIR = Path(__file__).parent
-DEFAULT_METRICS_CONFIG = TEST_DIR / "data" / "jetstream" / "defaults" / "firefox_desktop.toml"
 
 
 class TestConfigIntegration:

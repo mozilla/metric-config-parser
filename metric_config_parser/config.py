@@ -291,7 +291,13 @@ class ConfigCollection:
                 repo = Repo(repo_url)
                 tmp_dir = Path(repo_url)
             else:
-                repo = Repo.clone_from(repo_url or cls.repo_url, tmp_dir)
+                if repo_url is not None and "/tree/" in repo_url:
+                    repo_url, tree = repo_url.split("/tree/")
+                    branch, path = tree.split("/", 1)
+                    repo = Repo.clone_from(repo_url or cls.repo_url, tmp_dir)
+                    repo.git.checkout(branch)
+                else:
+                    repo = Repo.clone_from(repo_url or cls.repo_url, tmp_dir)
 
             external_configs = []
 
