@@ -1,15 +1,20 @@
 import datetime as dt
+import shutil
+from pathlib import Path
 from textwrap import dedent
 
 import pytest
 import pytz
 import toml
+from git import Repo
 
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.config import ConfigCollection, DefinitionConfig, Outcome
 from metric_config_parser.experiment import Branch, Experiment
 from metric_config_parser.function import FunctionsSpec
 from metric_config_parser.outcome import OutcomeSpec
+
+TEST_DIR = Path(__file__).parent
 
 
 @pytest.fixture
@@ -301,3 +306,14 @@ def experiments():
             enrollment_end_date=dt.datetime(2019, 12, 3, tzinfo=pytz.utc),
         ),
     ]
+
+
+@pytest.fixture
+def local_tmp_repo(tmpdir):
+    r = Repo.init(tmpdir)
+    shutil.copytree(TEST_DIR / "data", tmpdir / "metrics")
+    r.config_writer().set_value("user", "name", "test").release()
+    r.config_writer().set_value("user", "email", "test@example.com").release()
+    r.git.add(".")
+    r.git.commit("-m", "commit")
+    return tmpdir

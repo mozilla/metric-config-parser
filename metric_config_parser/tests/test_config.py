@@ -18,7 +18,7 @@ from metric_config_parser.errors import DefinitionNotFound
 from metric_config_parser.outcome import OutcomeSpec
 
 TEST_DIR = Path(__file__).parent
-DEFAULT_METRICS_CONFIG = TEST_DIR / "data" / "default_metrics.toml"
+DEFAULT_METRICS_CONFIG = TEST_DIR / "data" / "jetstream" / "defaults" / "firefox_desktop.toml"
 
 
 class TestConfigIntegration:
@@ -359,3 +359,16 @@ class TestConfigIntegration:
             for slug, m in config_collection_1.definitions[0].spec.metrics.definitions.items()
             if slug == "unenroll"
         ][0].select_expression == "3"
+
+    def test_config_collection_from_subdir(self, local_tmp_repo):
+        config_collection = ConfigCollection.from_github_repo(
+            local_tmp_repo, path="metrics/jetstream"
+        )
+        assert len(config_collection.configs) > 0
+
+    def test_configs_from_private_repo(self, local_tmp_repo):
+        config_collection = ConfigCollection.from_github_repo(
+            local_tmp_repo, path="metrics/jetstream", is_private=True
+        )
+        assert config_collection is not None
+        assert config_collection.configs[0].spec.experiment.is_private

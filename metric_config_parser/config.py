@@ -279,7 +279,10 @@ class ConfigCollection:
 
     @classmethod
     def from_github_repo(
-        cls, repo_url: Optional[str] = None, is_private: bool = False
+        cls,
+        repo_url: Optional[str] = None,
+        is_private: bool = False,
+        path: Optional[str] = None,
     ) -> "ConfigCollection":
         """Pull in external config files."""
         # download files to tmp directory
@@ -291,6 +294,9 @@ class ConfigCollection:
                 repo = Repo.clone_from(repo_url or cls.repo_url, tmp_dir)
 
             external_configs = []
+
+            if path is not None:
+                tmp_dir = tmp_dir / path
 
             for config_file in tmp_dir.glob("*.toml"):
                 last_modified = next(repo.iter_commits("HEAD", paths=config_file)).committed_date
