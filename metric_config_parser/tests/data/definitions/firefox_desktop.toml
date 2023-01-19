@@ -1,0 +1,46 @@
+[metrics]
+
+[metrics.unenroll]
+data_source = "normandy_events"
+select_expression='''{{agg_any(
+    """
+        event_category = 'normandy'
+        AND event_method = 'unenroll'
+        AND event_string_value = '{experiment_slug}'
+    """
+)}}'''
+friendly_name = "Unenrollments"
+description = """
+    Counts the number of clients with an experiment unenrollment event.
+"""
+bigger_is_better = false
+
+
+[metrics.active_hours]
+friendly_name = "Active hours"
+description = """
+    Measures the amount of time (in 5-second increments) during which
+    Firefox received user input from a keyboard or mouse. The Firefox
+    window does not need to be focused.
+"""
+select_expression = '{{agg_sum("active_hours_sum")}}'
+data_source = "clients_daily"
+
+
+[data_sources]
+
+[data_sources.clients_daily]
+from_expression = "mozdata.telemetry.clients_daily"
+friendly_name = "Clients Daily"
+description = "Clients Daily"
+
+[data_sources.normandy_events]
+from_expression = """(
+    SELECT
+        *
+    FROM mozdata.telemetry.events
+    WHERE event_category = 'normandy'
+)"""
+experiments_column_type="native"
+friendly_name = "Normandy Events"
+description = "Normandy Events"
