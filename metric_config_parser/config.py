@@ -325,7 +325,7 @@ class ConfigCollection:
                 )
 
             outcomes = []
-            for outcome_file in tmp_dir.glob(f"**/{OUTCOMES_DIR}/*/*.toml"):
+            for outcome_file in tmp_dir.glob(f"{OUTCOMES_DIR}/*/*.toml"):
                 commit_hash = next(repo.iter_commits("HEAD", paths=outcome_file)).hexsha
 
                 outcomes.append(
@@ -339,14 +339,14 @@ class ConfigCollection:
                 )
 
             default_configs = []
-            for default_config_file in tmp_dir.glob(f"**/{DEFAULTS_DIR}/*.toml"):
+            for default_config_file in tmp_dir.glob(f"{DEFAULTS_DIR}/*.toml"):
                 last_modified = next(
                     repo.iter_commits("HEAD", paths=default_config_file)
                 ).committed_date
 
                 default_config_json = toml.load(default_config_file)
 
-                if "project" in config_json:
+                if "project" in default_config_json:
                     # opmon spec
                     spec = MonitoringSpec.from_dict(default_config_json)
                 else:
@@ -363,7 +363,7 @@ class ConfigCollection:
                 )
 
             definitions = []
-            for definitions_config_file in tmp_dir.glob(f"**/{DEFINITIONS_DIR}/*.toml"):
+            for definitions_config_file in tmp_dir.glob(f"{DEFINITIONS_DIR}/*.toml"):
                 last_modified = next(
                     repo.iter_commits("HEAD", paths=definitions_config_file)
                 ).committed_date
@@ -379,7 +379,7 @@ class ConfigCollection:
                 )
 
             functions_spec = None
-            for functions_file in tmp_dir.glob(f"**/{DEFINITIONS_DIR}/{FUNCTIONS_FILE}"):
+            for functions_file in tmp_dir.glob(f"{DEFINITIONS_DIR}/{FUNCTIONS_FILE}"):
                 functions_spec = FunctionsSpec.from_dict(toml.load(functions_file))
 
         return cls(external_configs, outcomes, default_configs, definitions, functions_spec)
@@ -532,11 +532,13 @@ class ConfigCollection:
         other_definitions = {
             definition.slug: definition for definition in deepcopy(other.definitions)
         }
-        definitions = {definition.slug: definition for definition in deepcopy(self.definitions)}
+        definitions = {
+            definition.slug: deepcopy(definition) for definition in deepcopy(self.definitions)
+        }
 
         for slug, definition in other_definitions.items():
             if slug not in definitions:
-                definitions[slug] = definition
+                definitions[slug] = deepcopy(definition)
             else:
                 definitions[slug].spec.merge(definition.spec)
 
@@ -548,7 +550,7 @@ class ConfigCollection:
 
         for slug, default in other_defaults.items():
             if slug not in defaults:
-                defaults[slug] = default
+                defaults[slug] = deepcopy(default)
             else:
                 defaults[slug].spec.merge(default.spec)
 
