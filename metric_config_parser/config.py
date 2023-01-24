@@ -310,6 +310,7 @@ class ConfigCollection:
 
                     repo = Repo(repo_path)
                     path = str(dir_path)
+                    repo_url = str(repo_path)
 
                 tmp_dir = Path(repo_url)
             else:
