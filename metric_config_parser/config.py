@@ -7,6 +7,7 @@ import attr
 import jinja2
 import toml
 from git import Repo
+from git.exc import InvalidGitRepositoryError
 from jinja2 import StrictUndefined
 from pytz import UTC
 
@@ -283,12 +284,33 @@ class ConfigCollection:
         repo_url: Optional[str] = None,
         is_private: bool = False,
         path: Optional[str] = None,
+        depth: Optional[int] = None,
     ) -> "ConfigCollection":
         """Pull in external config files."""
         # download files to tmp directory
         with TemporaryDirectory() as tmp_dir:
             if repo_url is not None and Path(repo_url).exists() and Path(repo_url).is_dir():
-                repo = Repo(repo_url)
+                if path:
+                    repo = Repo(repo_url)
+                else:
+                    repo_path = Path(repo_url)
+                    dir_path = Path()
+                    depth = depth or 3
+
+                    # check if parent folder is a repository until search depth is exceeded
+                    while depth > 0:
+                        try:
+                            repo = Repo(repo_path)
+                        except InvalidGitRepositoryError:
+                            dir_path = Path(repo_path.name) / dir_path
+                            repo_path = repo_path.parent
+                            depth -= 1
+                        else:
+                            depth = 0
+
+                    repo = Repo(repo_path)
+                    path = str(dir_path)
+
                 tmp_dir = Path(repo_url)
             else:
                 if repo_url is not None and "/tree/" in repo_url:
