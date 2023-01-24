@@ -1,4 +1,5 @@
 import datetime
+from pathlib import Path
 from textwrap import dedent
 
 import pytest
@@ -368,3 +369,14 @@ class TestConfigIntegration:
         )
         assert config_collection is not None
         assert config_collection.configs[0].spec.experiment.is_private
+
+    def test_config_from_subdir(self, local_tmp_repo):
+        nested_path = Path(local_tmp_repo) / "metrics" / "jetstream"
+        config_collection = ConfigCollection.from_github_repo(nested_path)
+        assert config_collection is not None
+
+    def test_config_from_subdir_too_deep(self, local_tmp_repo):
+        nested_path = Path(local_tmp_repo) / "metrics" / "jetstream"
+
+        with pytest.raises(Exception):
+            ConfigCollection.from_github_repo(nested_path, depth=1)
