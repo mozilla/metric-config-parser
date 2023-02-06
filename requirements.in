@@ -55,7 +55,7 @@ mccabe==0.7.0
     # via -r -
 mypy==0.990
     # via mozilla-metric-config-parser
-mypy-extensions==0.4.3
+mypy-extensions==1.0.0
     # via
     #   black
     #   mypy
