@@ -129,5 +129,5 @@ typing-extensions==4.4.0
     #   mypy
 urllib3==1.26.12
     # via requests
-zipp==3.10.0
+zipp==3.13.0
     # via importlib-resources
