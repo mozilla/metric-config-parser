@@ -53,6 +53,8 @@ class Experiment:
         reference_branch: V1 experiment branch slug where is_control is True;
             V6 experiment reference_branch
         enrollment_end_date: experiment enrollment_end_date
+        is_enrollment_paused: True if enrollment has ended;
+            needed because enrollment_end_date may be computed/proposed
     """
 
     experimenter_slug: Optional[str]
@@ -72,6 +74,7 @@ class Experiment:
     boolean_pref: Optional[str] = None
     channel: Optional[Channel] = None
     is_rollout: bool = False
+    is_enrollment_paused: bool = False
 
 
 @attr.s(auto_attribs=True)
@@ -116,6 +119,10 @@ class ExperimentConfiguration:
     @property
     def enrollment_end_date(self) -> Optional[dt.datetime]:
         return self.experiment.enrollment_end_date
+
+    @property
+    def is_enrollment_paused(self) -> bool:
+        return self.experiment.is_enrollment_paused
 
     @property
     def enrollment_period(self) -> int:
