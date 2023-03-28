@@ -19,7 +19,6 @@ TEST_DIR = Path(__file__).parent
 
 @pytest.fixture
 def config_collection():
-
     config_str = dedent(
         """
         [metrics]
