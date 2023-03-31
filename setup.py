@@ -42,6 +42,7 @@ setup(
     ],
     package_data={
         "metric_config_parser.tests": ["data/*"],
+        "metric_config_parser": ["templates/*"],
     },
     install_requires=[
         "attrs",
@@ -63,5 +64,5 @@ setup(
         [console_scripts]
         metric-config-parser=metric_config_parser.cli:cli
     """,
-    version="2023.3.1",
+    version="2023.4.1",
 )
