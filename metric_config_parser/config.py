@@ -22,7 +22,7 @@ from .errors import UnexpectedKeyConfigurationException
 from .experiment import Channel, Experiment
 from .metric import MetricDefinition
 from .outcome import OutcomeSpec
-from .sql import generate_metrics_sql
+from .sql import generate_data_source_sql, generate_metrics_sql
 from .util import TemporaryDirectory
 
 OUTCOMES_DIR = "outcomes"
@@ -519,10 +519,17 @@ class ConfigCollection:
         platform: str,
         group_by: List[str] = [],
         where: Optional[str] = None,
-    ):
+    ) -> str:
         """Generate a SQL query for the specified metrics."""
         return generate_metrics_sql(
             self, metrics=metrics, platform=platform, group_by=group_by, where=where
+        )
+
+    def get_data_source_sql(
+        self, data_source: str, platform: str, where: Optional[str] = None
+    ) -> str:
+        return generate_data_source_sql(
+            self, data_source=data_source, platform=platform, where=where
         )
 
     def get_env(self) -> jinja2.Environment:
