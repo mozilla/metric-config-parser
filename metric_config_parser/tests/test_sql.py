@@ -59,6 +59,20 @@ def test_generate_query_with_multiple_metrics_different_data_sources(config_coll
     )
 
 
+def test_generate_query_without_client_id_submission_date(config_collection):
+    assert (
+        config_collection.get_metrics_sql(
+            metrics=["active_hours"],
+            platform="firefox_desktop",
+            group_by=["build_id"],
+            where="submission_date = '2023-01-01' AND normalized_channel = 'release'",
+            group_by_client_id=False,
+            group_by_submission_date=False,
+        )
+        == (TEST_DATA / "test_generate_query_without_client_id.expected.sql").read_text()
+    )
+
+
 def test_no_metric_definition_found(config_collection):
     with pytest.raises(ValueError):
         config_collection.get_metrics_sql(metrics=["doesnt-exist"], platform="firefox_desktop")

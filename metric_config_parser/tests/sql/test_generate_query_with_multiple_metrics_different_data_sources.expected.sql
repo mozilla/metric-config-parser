@@ -17,6 +17,7 @@ WITH clients_daily AS (
         sample_id,
         client_id,
         submission_date
+        
 ),
  normandy_events AS (
     SELECT
@@ -43,6 +44,7 @@ WITH clients_daily AS (
         sample_id,
         client_id,
         submission_date
+        
 ),
  events AS (
     SELECT
@@ -63,6 +65,7 @@ WITH clients_daily AS (
         sample_id,
         client_id,
         submission_date
+        
 )
 SELECT
     clients_daily.client_id,

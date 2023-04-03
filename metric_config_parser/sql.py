@@ -18,6 +18,8 @@ def generate_metrics_sql(
     platform: str,
     group_by: Union[List[str], Dict[str, str]] = [],
     where: Optional[str] = None,
+    group_by_client_id: bool = True,
+    group_by_submission_date: bool = True,
 ) -> str:
     """Generates a SQL query for metrics and specified parameters."""
     metric_definitions: List[MetricDefinition] = []
@@ -77,6 +79,8 @@ def generate_metrics_sql(
                 "metrics_per_data_source": metrics_per_data_source,
                 "where": where,
                 "group_by": group_by,
+                "group_by_client_id": group_by_client_id,
+                "group_by_submission_date": group_by_submission_date,
             }
         )
     )

@@ -519,10 +519,18 @@ class ConfigCollection:
         platform: str,
         group_by: List[str] = [],
         where: Optional[str] = None,
+        group_by_client_id: bool = True,
+        group_by_submission_date: bool = True,
     ) -> str:
         """Generate a SQL query for the specified metrics."""
         return generate_metrics_sql(
-            self, metrics=metrics, platform=platform, group_by=group_by, where=where
+            self,
+            metrics=metrics,
+            platform=platform,
+            group_by=group_by,
+            where=where,
+            group_by_client_id=group_by_client_id,
+            group_by_submission_date=group_by_submission_date,
         )
 
     def get_data_source_sql(
