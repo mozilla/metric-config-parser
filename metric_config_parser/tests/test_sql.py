@@ -62,3 +62,19 @@ def test_generate_query_with_multiple_metrics_different_data_sources(config_coll
 def test_no_metric_definition_found(config_collection):
     with pytest.raises(ValueError):
         config_collection.get_metrics_sql(metrics=["doesnt-exist"], platform="firefox_desktop")
+
+
+def test_data_source(config_collection):
+    assert (
+        config_collection.get_data_source_sql(
+            data_source="main", platform="firefox_desktop", where="submission_date = '2023-01-01'"
+        )
+        == (TEST_DATA / "test_generate_data_source.expected.sql").read_text()
+    )
+
+
+def test_data_source_not_found(config_collection):
+    with pytest.raises(ValueError):
+        config_collection.get_data_source_sql(
+            data_source="non-existing", platform="firefox_desktop"
+        )

@@ -9,6 +9,7 @@ if TYPE_CHECKING:
 
 FILE_PATH = Path(os.path.dirname(__file__))
 METRICS_QUERY = FILE_PATH / "templates" / "metrics_query.sql"
+DATA_SOURCE_QUERY = FILE_PATH / "templates" / "data_source_query.sql"
 
 
 def generate_metrics_sql(
@@ -17,7 +18,7 @@ def generate_metrics_sql(
     platform: str,
     group_by: Union[List[str], Dict[str, str]] = [],
     where: Optional[str] = None,
-):
+) -> str:
     """Generates a SQL query for metrics and specified parameters."""
     metric_definitions: List[MetricDefinition] = []
     for slug in metrics:
@@ -76,6 +77,36 @@ def generate_metrics_sql(
                 "metrics_per_data_source": metrics_per_data_source,
                 "where": where,
                 "group_by": group_by,
+            }
+        )
+    )
+
+
+def generate_data_source_sql(
+    config_collection: "ConfigCollection",
+    data_source: str,
+    platform: str,
+    where: Optional[str] = None,
+) -> str:
+    """Generates a SQL query for the specified data source."""
+    template = DATA_SOURCE_QUERY.read_text()
+    data_source_definition = config_collection.get_data_source_definition(data_source, platform)
+
+    if data_source_definition is None:
+        raise ValueError(f"No valid data source definition found for {data_source}")
+
+    # default parameters need to be set explicitly otherwise they'll be None
+    data_source_definition.client_id_column = data_source_definition.client_id_column or "client_id"
+    data_source_definition.submission_date_column = (
+        data_source_definition.submission_date_column or "submission_date"
+    )
+    return (
+        config_collection.get_env()
+        .from_string(template)
+        .render(
+            **{
+                "data_source": data_source_definition,
+                "where": where,
             }
         )
     )
