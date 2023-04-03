@@ -43,7 +43,7 @@ SELECT
     {{ metrics_per_data_source.keys() | first }}.submission_date,
     {% endif -%}
     {% for dimension, dimension_sql in group_by.items() -%}
-    {{ metrics_per_data_source.keys() | first }}.{{ dimension_sql }} AS {{ dimension }},
+    {{ metrics_per_data_source.keys() | first }}.{{ dimension }} AS {{ dimension }},
     {% endfor -%}
     {% for d, data_source_info in metrics_per_data_source.items() -%}
     {% for metric in data_source_info["metrics"] -%}
