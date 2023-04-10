@@ -78,7 +78,7 @@ pyflakes==3.0.1
     # via flake8
 pyrsistent==0.19.3
     # via jsonschema
-pytest==7.2.2
+pytest==7.3.0
     # via
     #   mozilla-metric-config-parser
     #   pytest-black
