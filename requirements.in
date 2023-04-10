@@ -53,7 +53,7 @@ markupsafe==2.1.2
 mccabe==0.7.0
     # via flake8
     # via -r -
-mypy==1.1.1
+mypy==1.2.0
     # via mozilla-metric-config-parser
 mypy-extensions==1.0.0
     # via
