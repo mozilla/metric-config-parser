@@ -68,7 +68,7 @@ class Experiment:
     reference_branch: Optional[str]
     is_high_population: bool
     app_name: str
-    is_enrollment_paused: Optional[bool]
+    is_enrollment_paused: Optional[bool] = None
     app_id: Optional[str] = None
     outcomes: List[str] = attr.Factory(list)
     enrollment_end_date: Optional[dt.datetime] = None
