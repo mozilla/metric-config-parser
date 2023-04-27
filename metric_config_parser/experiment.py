@@ -121,7 +121,7 @@ class ExperimentConfiguration:
         return self.experiment.enrollment_end_date
 
     @property
-    def is_enrollment_paused(self) -> bool:
+    def is_enrollment_paused(self) -> Optional[bool]:
         return self.experiment.is_enrollment_paused
 
     @property
