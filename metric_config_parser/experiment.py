@@ -68,13 +68,13 @@ class Experiment:
     reference_branch: Optional[str]
     is_high_population: bool
     app_name: str
+    is_enrollment_paused: Optional[bool]
     app_id: Optional[str] = None
     outcomes: List[str] = attr.Factory(list)
     enrollment_end_date: Optional[dt.datetime] = None
     boolean_pref: Optional[str] = None
     channel: Optional[Channel] = None
     is_rollout: bool = False
-    is_enrollment_paused: bool = False
 
 
 @attr.s(auto_attribs=True)
