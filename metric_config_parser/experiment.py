@@ -36,6 +36,15 @@ class Branch:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class BucketConfig:
+    randomization_unit: str
+    namespace: str
+    start: int
+    count: int
+    total: int = 10000
+
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class Experiment:
     """
     Common experiment representation.
@@ -68,6 +77,7 @@ class Experiment:
     reference_branch: Optional[str]
     is_high_population: bool
     app_name: str
+    bucket_config: Optional[BucketConfig] = None
     is_enrollment_paused: Optional[bool] = None
     app_id: Optional[str] = None
     outcomes: List[str] = attr.Factory(list)
@@ -123,6 +133,20 @@ class ExperimentConfiguration:
     @property
     def is_enrollment_paused(self) -> Optional[bool]:
         return self.experiment.is_enrollment_paused
+
+    @property
+    def bucket_count(self) -> Optional[int]:
+        if hasattr(self.experiment, "bucket_config") and self.experiment.bucket_config is not None:
+            return self.experiment.bucket_config.count
+
+        return None
+
+    @property
+    def bucket_start(self) -> Optional[int]:
+        if hasattr(self.experiment, "bucket_config") and self.experiment.bucket_config is not None:
+            return self.experiment.bucket_config.start
+
+        return None
 
     @property
     def enrollment_period(self) -> int:
