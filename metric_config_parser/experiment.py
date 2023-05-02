@@ -77,7 +77,7 @@ class Experiment:
     reference_branch: Optional[str]
     is_high_population: bool
     app_name: str
-    bucket_config: Optional[BucketConfig]
+    bucket_config: Optional[BucketConfig] = None
     is_enrollment_paused: Optional[bool] = None
     app_id: Optional[str] = None
     outcomes: List[str] = attr.Factory(list)
