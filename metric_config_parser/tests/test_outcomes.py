@@ -7,7 +7,7 @@ import toml
 from cattrs.errors import ClassValidationError
 
 from metric_config_parser.analysis import AnalysisSpec
-from metric_config_parser.experiment import Experiment
+from metric_config_parser.experiment import BucketConfig, Experiment
 from metric_config_parser.metric import AnalysisPeriod
 from metric_config_parser.outcome import OutcomeSpec
 
@@ -298,6 +298,13 @@ class TestOutcomes:
 
     def test_unsupported_platform_outcomes(self, config_collection):
         spec = AnalysisSpec.from_dict(toml.loads(""))
+        dummy_bucket_config = BucketConfig(
+            randomization_unit="dummy-bucket",
+            namespace="dummy",
+            start=1000,
+            count=2000,
+            total=10000,
+        )
         experiment = Experiment(
             experimenter_slug="test_slug",
             type="pref",
@@ -311,6 +318,7 @@ class TestOutcomes:
             is_high_population=True,
             outcomes=["performance"],
             app_name="fenix",
+            bucket_config=dummy_bucket_config,
         )
 
         with pytest.raises(ValueError):

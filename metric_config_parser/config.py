@@ -19,7 +19,7 @@ from metric_config_parser.segment import SegmentDataSourceDefinition, SegmentDef
 
 from .analysis import AnalysisSpec
 from .errors import UnexpectedKeyConfigurationException
-from .experiment import Channel, Experiment
+from .experiment import BucketConfig, Channel, Experiment
 from .metric import MetricDefinition
 from .outcome import OutcomeSpec
 from .sql import generate_data_source_sql, generate_metrics_sql
@@ -31,6 +31,14 @@ DEFINITIONS_DIR = "definitions"
 FUNCTIONS_FILE = "functions.toml"
 JETSTREAM_CONFIG_URL = "https://github.com/mozilla/jetstream-config"
 
+
+dummy_bucket_config = BucketConfig(
+    randomization_unit="dummy-bucket",
+    namespace="dummy",
+    start=1000,
+    count=2000,
+    total=10000,
+)
 
 @attr.s(auto_attribs=True)
 class Config:
@@ -131,6 +139,7 @@ class DefaultConfig(Config):
             proposed_enrollment=14,
             app_name=self.slug,
             channel=Channel.NIGHTLY,
+            bucket_config=dummy_bucket_config,
         )
         spec = AnalysisSpec.default_for_experiment(dummy_experiment, configs)
         spec.merge(self.spec)
@@ -161,6 +170,7 @@ class Outcome:
             proposed_enrollment=14,
             app_name=self.platform,
             channel=Channel.NIGHTLY,
+            bucket_config=dummy_bucket_config,
         )
 
         spec = AnalysisSpec.default_for_experiment(dummy_experiment, configs)
@@ -191,6 +201,7 @@ class DefinitionConfig(Config):
             proposed_enrollment=14,
             app_name=self.platform,
             channel=Channel.NIGHTLY,
+            bucket_config=dummy_bucket_config,
         )
 
         if not isinstance(self.spec, DefinitionSpec):
