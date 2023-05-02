@@ -135,6 +135,14 @@ class ExperimentConfiguration:
         return self.experiment.is_enrollment_paused
 
     @property
+    def bucket_count(self) -> int:
+        return self.experiment.bucket_config.count
+    
+    @property
+    def bucket_start(self) -> int:
+        return self.experiment.bucket_config.start
+
+    @property
     def enrollment_period(self) -> int:
         if self.experiment_spec.enrollment_period is not None:
             return self.experiment_spec.enrollment_period
