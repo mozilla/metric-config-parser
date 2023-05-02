@@ -7,17 +7,9 @@ import pytz
 from git import Repo
 
 from metric_config_parser.config import ConfigCollection
-from metric_config_parser.experiment import Branch, BucketConfig, Experiment
+from metric_config_parser.experiment import Branch, Experiment
 
 TEST_DIR = Path(__file__).parent
-
-test_bucket_config = BucketConfig(
-    randomization_unit="test-bucket",
-    namespace="test",
-    start=1000,
-    count=2000,
-    total=10000,
-)
 
 
 @pytest.fixture
@@ -35,7 +27,6 @@ def experiments():
             reference_branch="b",
             is_high_population=False,
             app_name="firefox_desktop",
-            bucket_config=test_bucket_config,
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -49,7 +40,6 @@ def experiments():
             reference_branch=None,
             is_high_population=False,
             app_name="firefox_desktop",
-            bucket_config=test_bucket_config,
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -63,7 +53,6 @@ def experiments():
             reference_branch=None,
             is_high_population=False,
             app_name="firefox_desktop",
-            bucket_config=test_bucket_config,
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -77,7 +66,6 @@ def experiments():
             reference_branch=None,
             is_high_population=True,
             app_name="firefox_desktop",
-            bucket_config=test_bucket_config,
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -91,7 +79,6 @@ def experiments():
             reference_branch="b",
             is_high_population=False,
             app_name="firefox_desktop",
-            bucket_config=test_bucket_config,
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -106,7 +93,6 @@ def experiments():
             is_high_population=True,
             outcomes=["performance", "tastiness"],
             app_name="firefox_desktop",
-            bucket_config=test_bucket_config,
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -121,7 +107,6 @@ def experiments():
             is_high_population=True,
             outcomes=["parameterized"],
             app_name="firefox_desktop",
-            bucket_config=test_bucket_config,
         ),
         Experiment(
             experimenter_slug="test_slug",
@@ -137,7 +122,6 @@ def experiments():
             outcomes=["parameterized_distinct_by_branch_config"],
             app_name="firefox_desktop",
             enrollment_end_date=dt.datetime(2019, 12, 3, tzinfo=pytz.utc),
-            bucket_config=test_bucket_config,
         ),
     ]
 

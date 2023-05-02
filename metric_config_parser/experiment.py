@@ -77,7 +77,7 @@ class Experiment:
     reference_branch: Optional[str]
     is_high_population: bool
     app_name: str
-    bucket_config: BucketConfig
+    bucket_config: Optional[BucketConfig]
     is_enrollment_paused: Optional[bool] = None
     app_id: Optional[str] = None
     outcomes: List[str] = attr.Factory(list)
@@ -135,12 +135,14 @@ class ExperimentConfiguration:
         return self.experiment.is_enrollment_paused
 
     @property
-    def bucket_count(self) -> int:
-        return self.experiment.bucket_config.count
+    def bucket_count(self) -> Optional[int]:
+        if hasattr(self.experiment, "bucket_config"):
+            return self.experiment.bucket_config.count
 
     @property
-    def bucket_start(self) -> int:
-        return self.experiment.bucket_config.start
+    def bucket_start(self) -> Optional[int]:
+        if hasattr(self.experiment, "bucket_config"):
+            return self.experiment.bucket_config.start
 
     @property
     def enrollment_period(self) -> int:
