@@ -136,13 +136,17 @@ class ExperimentConfiguration:
 
     @property
     def bucket_count(self) -> Optional[int]:
-        if hasattr(self.experiment, "bucket_config"):
+        if hasattr(self.experiment, "bucket_config") and self.experiment.bucket_config is not None:
             return self.experiment.bucket_config.count
+
+        return None
 
     @property
     def bucket_start(self) -> Optional[int]:
-        if hasattr(self.experiment, "bucket_config"):
+        if hasattr(self.experiment, "bucket_config") and self.experiment.bucket_config is not None:
             return self.experiment.bucket_config.start
+
+        return None
 
     @property
     def enrollment_period(self) -> int:
