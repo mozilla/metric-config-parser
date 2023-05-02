@@ -36,6 +36,15 @@ class Branch:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class BucketConfig:
+    randomization_unit: str
+    namespace: str
+    start: int
+    count: int
+    total: int = 10000
+
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class Experiment:
     """
     Common experiment representation.
@@ -68,6 +77,7 @@ class Experiment:
     reference_branch: Optional[str]
     is_high_population: bool
     app_name: str
+    bucket_config: BucketConfig
     is_enrollment_paused: Optional[bool] = None
     app_id: Optional[str] = None
     outcomes: List[str] = attr.Factory(list)
