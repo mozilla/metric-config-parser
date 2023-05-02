@@ -137,7 +137,7 @@ class ExperimentConfiguration:
     @property
     def bucket_count(self) -> int:
         return self.experiment.bucket_config.count
-    
+
     @property
     def bucket_start(self) -> int:
         return self.experiment.bucket_config.start

@@ -40,6 +40,7 @@ dummy_bucket_config = BucketConfig(
     total=10000,
 )
 
+
 @attr.s(auto_attribs=True)
 class Config:
     """Represent an external config file."""

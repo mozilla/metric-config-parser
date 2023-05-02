@@ -19,6 +19,7 @@ test_bucket_config = BucketConfig(
     total=10000,
 )
 
+
 @pytest.fixture
 def experiments():
     return [
