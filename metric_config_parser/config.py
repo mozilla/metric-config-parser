@@ -1,5 +1,8 @@
 import datetime as dt
+import shutil
+import tempfile
 from copy import deepcopy
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -265,6 +268,15 @@ def entity_from_path(
 
 
 @attr.s(auto_attribs=True)
+class Repository:
+    """Local repository config files are loaded from."""
+
+    path: Path
+    repo: Repo
+    main_branch: str
+
+
+@attr.s(auto_attribs=True)
 class ConfigCollection:
     """
     Collection of experiment-specific configurations pulled in
@@ -276,6 +288,8 @@ class ConfigCollection:
     defaults: List[DefaultConfig] = attr.Factory(list)
     definitions: List[DefinitionConfig] = attr.Factory(list)
     functions: Optional[FunctionsSpec] = None
+    repos: List[Repository] = []  # repos configs were loaded from
+    is_private: bool = False
 
     repo_url = "https://github.com/mozilla/metric-hub"
 
@@ -288,125 +302,44 @@ class ConfigCollection:
         depth: Optional[int] = None,
     ) -> "ConfigCollection":
         """Pull in external config files."""
-        # download files to tmp directory
-        with TemporaryDirectory() as tmp_dir:
-            if repo_url is not None and Path(repo_url).exists() and Path(repo_url).is_dir():
-                if path:
-                    repo = Repo(repo_url)
-                else:
-                    repo_path = Path(repo_url)
-                    dir_path = Path()
-                    depth = depth or 3
-
-                    # check if parent folder is a repository until search depth is exceeded
-                    while depth > 0:
-                        try:
-                            repo = Repo(repo_path)
-                        except InvalidGitRepositoryError:
-                            dir_path = Path(repo_path.name) / dir_path
-                            repo_path = repo_path.parent
-                            depth -= 1
-                        else:
-                            depth = 0
-
-                    repo = Repo(repo_path)
-                    path = str(dir_path)
-                    repo_url = str(repo_path)
-
-                tmp_dir = Path(repo_url)
+        # download files to a persisted tmp directory
+        tmp_dir = Path(tempfile.mkdtemp())
+        if repo_url is not None and Path(repo_url).exists() and Path(repo_url).is_dir():
+            if path:
+                repo = Repo(repo_url)
             else:
-                if repo_url is not None and "/tree/" in repo_url:
-                    repo_url, tree = repo_url.split("/tree/")
-                    branch, path = tree.split("/", 1)
-                    repo = Repo.clone_from(repo_url or cls.repo_url, tmp_dir)
-                    repo.git.checkout(branch)
-                else:
-                    repo = Repo.clone_from(repo_url or cls.repo_url, tmp_dir)
+                repo_path = Path(repo_url)
+                dir_path = Path()
+                depth = depth or 3
 
-            external_configs = []
+                # check if parent folder is a repository until search depth is exceeded
+                while depth > 0:
+                    try:
+                        repo = Repo(repo_path)
+                    except InvalidGitRepositoryError:
+                        dir_path = Path(repo_path.name) / dir_path
+                        repo_path = repo_path.parent
+                        depth -= 1
+                    else:
+                        depth = 0
 
-            if path is not None:
-                tmp_dir = tmp_dir / path
+                repo = Repo(repo_path)
+                path = str(dir_path)
+                repo_url = str(repo_path)
 
-            for config_file in tmp_dir.glob("*.toml"):
-                last_modified = next(repo.iter_commits("HEAD", paths=config_file)).committed_date
-                config_json = toml.load(config_file)
+            tmp_dir = Path(repo_url)
+        else:
+            if repo_url is not None and "/tree/" in repo_url:
+                repo_url, tree = repo_url.split("/tree/")
+                branch, path = tree.split("/", 1)
+                repo = Repo.clone_from(repo_url or cls.repo_url, tmp_dir)
+                repo.git.checkout(branch)
+            else:
+                repo = Repo.clone_from(repo_url or cls.repo_url, tmp_dir)
 
-                if "project" in config_json:
-                    # opmon spec
-                    spec: DefinitionSpecSub = MonitoringSpec.from_dict(config_json)
-                else:
-                    spec = AnalysisSpec.from_dict(config_json)
-                    spec.experiment.is_private = spec.experiment.is_private or is_private
-
-                external_configs.append(
-                    Config(
-                        config_file.stem,
-                        spec,
-                        UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
-                        is_private=is_private,
-                    )
-                )
-
-            outcomes = []
-            for outcome_file in tmp_dir.glob(f"{OUTCOMES_DIR}/*/*.toml"):
-                commit_hash = next(repo.iter_commits("HEAD", paths=outcome_file)).hexsha
-
-                outcomes.append(
-                    Outcome(
-                        slug=outcome_file.stem,
-                        spec=OutcomeSpec.from_dict(toml.load(outcome_file)),
-                        platform=outcome_file.parent.name,
-                        commit_hash=commit_hash,
-                        is_private=is_private,
-                    )
-                )
-
-            default_configs = []
-            for default_config_file in tmp_dir.glob(f"{DEFAULTS_DIR}/*.toml"):
-                last_modified = next(
-                    repo.iter_commits("HEAD", paths=default_config_file)
-                ).committed_date
-
-                default_config_json = toml.load(default_config_file)
-
-                if "project" in default_config_json:
-                    # opmon spec
-                    spec = MonitoringSpec.from_dict(default_config_json)
-                else:
-                    spec = AnalysisSpec.from_dict(default_config_json)
-                    spec.experiment.is_private = spec.experiment.is_private or is_private
-
-                default_configs.append(
-                    DefaultConfig(
-                        default_config_file.stem,
-                        spec,
-                        UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
-                        is_private=is_private,
-                    )
-                )
-
-            definitions = []
-            for definitions_config_file in tmp_dir.glob(f"{DEFINITIONS_DIR}/*.toml"):
-                last_modified = next(
-                    repo.iter_commits("HEAD", paths=definitions_config_file)
-                ).committed_date
-
-                definitions.append(
-                    DefinitionConfig(
-                        definitions_config_file.stem,
-                        DefinitionSpec.from_dict(toml.load(definitions_config_file)),
-                        UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
-                        platform=definitions_config_file.stem,
-                        is_private=is_private,
-                    )
-                )
-
-            functions_spec = None
-            for functions_file in tmp_dir.glob(f"{DEFINITIONS_DIR}/{FUNCTIONS_FILE}"):
-                functions_spec = FunctionsSpec.from_dict(toml.load(functions_file))
-
-        return cls(external_configs, outcomes, default_configs, definitions, functions_spec)
+        return ConfigCollection.from_local_repo(
+            repo=repo, path=path, is_private=is_private, main_branch=repo.active_branch.name
+        )
 
     @classmethod
     def from_github_repos(
@@ -425,6 +358,146 @@ class ConfigCollection:
                 collection = ConfigCollection.from_github_repo(repo, is_private=is_private)
                 configs.merge(collection)
         return configs or ConfigCollection.from_github_repo()
+
+    @classmethod
+    def from_local_repo(cls, repo, path, is_private, main_branch) -> "ConfigCollection":
+        """Load configs from a local repository."""
+
+        if path:
+            files_path = Path(repo.git_dir).parent / path
+        else:
+            files_path = Path(repo.git_dir).parent
+
+        external_configs = []
+        for config_file in files_path.glob("*.toml"):
+            last_modified = next(repo.iter_commits("HEAD", paths=config_file)).committed_date
+            config_json = toml.load(config_file)
+
+            if "project" in config_json:
+                # opmon spec
+                spec: DefinitionSpecSub = MonitoringSpec.from_dict(config_json)
+            else:
+                spec = AnalysisSpec.from_dict(config_json)
+                spec.experiment.is_private = spec.experiment.is_private or is_private
+
+            external_configs.append(
+                Config(
+                    config_file.stem,
+                    spec,
+                    UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
+                    is_private=is_private,
+                )
+            )
+
+        outcomes = []
+        for outcome_file in files_path.glob(f"{OUTCOMES_DIR}/*/*.toml"):
+            commit_hash = next(repo.iter_commits("HEAD", paths=outcome_file)).hexsha
+
+            outcomes.append(
+                Outcome(
+                    slug=outcome_file.stem,
+                    spec=OutcomeSpec.from_dict(toml.load(outcome_file)),
+                    platform=outcome_file.parent.name,
+                    commit_hash=commit_hash,
+                    is_private=is_private,
+                )
+            )
+
+        default_configs = []
+        for default_config_file in files_path.glob(f"{DEFAULTS_DIR}/*.toml"):
+            last_modified = next(
+                repo.iter_commits("HEAD", paths=default_config_file)
+            ).committed_date
+
+            default_config_json = toml.load(default_config_file)
+
+            if "project" in default_config_json:
+                # opmon spec
+                spec = MonitoringSpec.from_dict(default_config_json)
+            else:
+                spec = AnalysisSpec.from_dict(default_config_json)
+                spec.experiment.is_private = spec.experiment.is_private or is_private
+
+            default_configs.append(
+                DefaultConfig(
+                    default_config_file.stem,
+                    spec,
+                    UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
+                    is_private=is_private,
+                )
+            )
+
+        definitions = []
+        for definitions_config_file in files_path.glob(f"{DEFINITIONS_DIR}/*.toml"):
+            last_modified = next(
+                repo.iter_commits("HEAD", paths=definitions_config_file)
+            ).committed_date
+
+            definitions.append(
+                DefinitionConfig(
+                    definitions_config_file.stem,
+                    DefinitionSpec.from_dict(toml.load(definitions_config_file)),
+                    UTC.localize(dt.datetime.utcfromtimestamp(last_modified)),
+                    platform=definitions_config_file.stem,
+                    is_private=is_private,
+                )
+            )
+
+        functions_spec = None
+        for functions_file in files_path.glob(f"{DEFINITIONS_DIR}/{FUNCTIONS_FILE}"):
+            functions_spec = FunctionsSpec.from_dict(toml.load(functions_file))
+
+        return cls(
+            external_configs,
+            outcomes,
+            default_configs,
+            definitions,
+            functions_spec,
+            repos=[Repository(repo=repo, path=path, main_branch=main_branch)],
+            is_private=is_private,
+        )
+
+    def as_of(self, timestamp: datetime) -> "ConfigCollection":
+        """Get configs as they were at the provided timestamp."""
+        config_collection = None
+
+        # configs can be loaded from multiple different repos
+        for repo in self.repos:
+            # copy the original repo to a temporary path were we can go back in history
+            with TemporaryDirectory() as tmp_dir:
+                git_dir = Path(repo.repo.git_dir)
+                shutil.copytree(git_dir.parent, tmp_dir, dirs_exist_ok=True)
+                tmp_repo = Repo(tmp_dir)
+
+                # find the commit that got added just before the `timestamp`
+                rev = "HEAD"
+                tmp_repo.git.checkout(repo.main_branch)
+                for commit in tmp_repo.iter_commits("HEAD"):
+                    if commit.committed_datetime <= timestamp:
+                        rev = commit.hexsha
+                        break
+
+                if commit:
+                    rev = commit.hexsha
+
+                # checkout that commit
+                tmp_repo.git.checkout(rev)
+
+                # load configs as they were at the time of the commit
+                configs = self.from_local_repo(
+                    tmp_repo, repo.path, self.is_private, repo.main_branch
+                )
+                configs.repos = [repo]  # point to the original repo, instead of the temporary one
+
+                if config_collection is None:
+                    config_collection = configs
+                else:
+                    config_collection.merge(configs)
+
+        if config_collection is None:
+            return self
+
+        return config_collection
 
     def spec_for_outcome(self, slug: str, platform: str) -> Optional[OutcomeSpec]:
         """Return the spec for a specific outcome"""
@@ -618,3 +691,5 @@ class ConfigCollection:
             self.functions = FunctionsSpec(functions=functions)
         else:
             self.functions.functions = functions
+
+        self.repos += other.repos
