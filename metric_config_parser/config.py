@@ -274,6 +274,16 @@ class Repository:
     path: Path
     repo: Repo
     main_branch: str
+    # indicates whether repository lives in a temporary directory that should be removed on del
+    is_tmp_repo: bool = False
+
+    def __del__(self):
+        # remove the temporary directories repos have been saved in
+        if self.is_tmp_repo:
+            git_dir = Path(self.repo.git_dir)
+            # don't delete repos that come from local directories
+            if git_dir.parent.exists():
+                shutil.rmtree(git_dir.parent)
 
 
 @attr.s(auto_attribs=True)
@@ -303,7 +313,8 @@ class ConfigCollection:
     ) -> "ConfigCollection":
         """Pull in external config files."""
         # download files to a persisted tmp directory
-        tmp_dir = Path(tempfile.mkdtemp())
+        tmp_dir = None
+        is_tmp_repo = False
         if repo_url is not None and Path(repo_url).exists() and Path(repo_url).is_dir():
             if path:
                 repo = Repo(repo_url)
@@ -329,6 +340,8 @@ class ConfigCollection:
 
             tmp_dir = Path(repo_url)
         else:
+            tmp_dir = Path(tempfile.mkdtemp())
+            is_tmp_repo = True
             if repo_url is not None and "/tree/" in repo_url:
                 repo_url, tree = repo_url.split("/tree/")
                 branch, path = tree.split("/", 1)
@@ -338,7 +351,11 @@ class ConfigCollection:
                 repo = Repo.clone_from(repo_url or cls.repo_url, tmp_dir)
 
         return ConfigCollection.from_local_repo(
-            repo=repo, path=path, is_private=is_private, main_branch=repo.active_branch.name
+            repo=repo,
+            path=path,
+            is_private=is_private,
+            main_branch=repo.active_branch.name,
+            is_tmp_repo=is_tmp_repo,
         )
 
     @classmethod
@@ -360,7 +377,9 @@ class ConfigCollection:
         return configs or ConfigCollection.from_github_repo()
 
     @classmethod
-    def from_local_repo(cls, repo, path, is_private, main_branch) -> "ConfigCollection":
+    def from_local_repo(
+        cls, repo, path, is_private, main_branch, is_tmp_repo=False
+    ) -> "ConfigCollection":
         """Load configs from a local repository."""
 
         if path:
@@ -453,7 +472,9 @@ class ConfigCollection:
             default_configs,
             definitions,
             functions_spec,
-            repos=[Repository(repo=repo, path=path, main_branch=main_branch)],
+            repos=[
+                Repository(repo=repo, path=path, main_branch=main_branch, is_tmp_repo=is_tmp_repo)
+            ],
             is_private=is_private,
         )
 
@@ -470,14 +491,21 @@ class ConfigCollection:
                 tmp_repo = Repo(tmp_dir)
 
                 # find the commit that got added just before the `timestamp`
-                rev = "HEAD"
+                rev = "HEAD"  # use the HEAD commit by default if no other commits exist
+
+                # make sure the most recent commit is checked out by checking out the main branch
                 tmp_repo.git.checkout(repo.main_branch)
+
+                # start iterating through all commits starting at HEAD
                 for commit in tmp_repo.iter_commits("HEAD"):
+                    # check if the commit timestamp is older than the reference timestamp
                     if commit.committed_datetime <= timestamp:
                         rev = commit.hexsha
                         break
 
                 if commit:
+                    # if there is no commit that is older than the reference timestamp,
+                    # use the oldest commit that we could find (= last commit)
                     rev = commit.hexsha
 
                 # checkout that commit
@@ -485,7 +513,7 @@ class ConfigCollection:
 
                 # load configs as they were at the time of the commit
                 configs = self.from_local_repo(
-                    tmp_repo, repo.path, self.is_private, repo.main_branch
+                    tmp_repo, repo.path, self.is_private, repo.main_branch, is_tmp_repo=True
                 )
                 configs.repos = [repo]  # point to the original repo, instead of the temporary one
 
