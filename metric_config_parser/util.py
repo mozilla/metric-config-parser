@@ -17,7 +17,8 @@ def TemporaryDirectory():
     try:
         yield name
     finally:
-        shutil.rmtree(name)
+        if name.exists():
+            shutil.rmtree(name)
 
 
 def parse_date(yyyy_mm_dd: Optional[str]) -> Optional[datetime]:

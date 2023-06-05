@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 
 from pytz import UTC
 
@@ -92,3 +93,21 @@ class TestConfigIntegration:
 
         assert config_collection.spec_for_outcome("networking", "firefox_desktop") is None
         assert config_collection.get_metric_definition("daily_active_users_v2", "fenix") is not None
+
+    def test_remove_tmp_dir_on_destruct(self):
+        config_collection = ConfigCollection.from_github_repos(
+            repo_urls=[
+                ConfigCollection.repo_url,
+                "https://github.com/mozilla/metric-hub/tree/main/jetstream",
+            ]
+        )
+
+        tmp_dirs = [Path(r.repo.git_dir).parent for r in config_collection.repos]
+
+        for tmp_dir in tmp_dirs:
+            assert tmp_dir.exists()
+
+        del config_collection
+
+        for tmp_dir in tmp_dirs:
+            assert tmp_dir.exists() is False
