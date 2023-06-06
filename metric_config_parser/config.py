@@ -481,6 +481,9 @@ class ConfigCollection:
 
     def as_of(self, timestamp: datetime) -> "ConfigCollection":
         """Get configs as they were at the provided timestamp."""
+        if timestamp is None:
+            return self
+
         config_collection = None
 
         # configs can be loaded from multiple different repos
