@@ -496,12 +496,18 @@ class ConfigCollection:
                 # make sure the most recent commit is checked out by checking out the main branch
                 tmp_repo.git.checkout(repo.main_branch)
 
+                # keep track of more recent commits to go back to in case invalid configs
+                # got checked into main that cannot be parsed
+                newer_commits = []
+
                 # start iterating through all commits starting at HEAD
                 for commit in tmp_repo.iter_commits("HEAD"):
                     # check if the commit timestamp is older than the reference timestamp
                     if commit.committed_datetime <= timestamp:
                         rev = commit.hexsha
                         break
+
+                    newer_commits.append(commit.hexsha)
 
                 if commit:
                     # if there is no commit that is older than the reference timestamp,
@@ -512,9 +518,38 @@ class ConfigCollection:
                 tmp_repo.git.checkout(rev)
 
                 # load configs as they were at the time of the commit
-                configs = self.from_local_repo(
-                    tmp_repo, repo.path, self.is_private, repo.main_branch, is_tmp_repo=True
-                )
+                try:
+                    configs = self.from_local_repo(
+                        tmp_repo, repo.path, self.is_private, repo.main_branch, is_tmp_repo=True
+                    )
+                except Exception as e:
+                    print(
+                        f"Error parsing config files as of {timestamp}: {e}. Trying newer version instead."
+                    )
+                    could_load_configs = False
+
+                    # iterate through newer commits to find one that can be parsed
+                    for sha in newer_commits:
+                        tmp_repo.git.checkout(sha)
+
+                        try:
+                            configs = self.from_local_repo(
+                                tmp_repo,
+                                repo.path,
+                                self.is_private,
+                                repo.main_branch,
+                                is_tmp_repo=True,
+                            )
+                            could_load_configs = True
+                            break
+                        except Exception:
+                            # continue searching
+                            pass
+
+                    if not could_load_configs:
+                        # there is no newer commit, current state is broken
+                        raise e
+
                 configs.repos = [repo]  # point to the original repo, instead of the temporary one
 
                 if config_collection is None:
