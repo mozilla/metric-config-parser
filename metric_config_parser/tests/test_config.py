@@ -1,10 +1,12 @@
 import datetime
+import shutil
 from pathlib import Path
 from textwrap import dedent
 
 import pytest
 import pytz
 import toml
+from git import Repo
 
 from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.config import (
@@ -16,6 +18,8 @@ from metric_config_parser.config import (
 )
 from metric_config_parser.errors import DefinitionNotFound
 from metric_config_parser.outcome import OutcomeSpec
+
+TEST_DIR = Path(__file__).parent
 
 
 class TestConfigIntegration:
@@ -380,3 +384,50 @@ class TestConfigIntegration:
 
         with pytest.raises(Exception):
             ConfigCollection.from_github_repo(nested_path, depth=1)
+
+    def test_as_of_broken_commit(self, tmp_path):
+        r = Repo.init(tmp_path)
+        r.config_writer().set_value("user", "name", "test").release()
+        r.config_writer().set_value("user", "email", "test@example.com").release()
+
+        # check in broken file
+        broken_config = dedent(
+            """
+            friendly_name = "Performance outcomes"
+            description = "Outcomes related to performance"
+
+            [metrics]
+            weekly = ["speed"]
+            overall = ["speed"]
+
+            [metrics.speed]
+            data_source = "main"
+            select_expression = "1"
+
+            [metrics.speed.statistics.bootstrap_mean]
+            """
+        )
+        outcome_path = tmp_path / "jetstream" / "outcomes" / "firefox_desktop"
+        outcome_path.mkdir(parents=True, exist_ok=True)
+        (outcome_path / "performance.toml").write_text(broken_config)
+        r.git.add(".")
+        r.git.commit("-m", "commit", "--date", "Mon 20 Aug 2020 20:19:19 UTC")
+
+        with pytest.raises(Exception):
+            ConfigCollection.from_github_repo(tmp_path / "jetstream")
+
+        with pytest.raises(Exception):
+            ConfigCollection.from_github_repo(tmp_path / "jetstream").as_of(
+                pytz.UTC.localize(datetime.datetime(2023, 5, 21))
+            )
+
+        # check in valid files
+        shutil.copytree(TEST_DIR / "data", tmp_path, dirs_exist_ok=True)
+        r.git.add(".")
+        r.git.commit("-m", "commit", "--date", "Mon 25 Aug 2020 20:00:19 UTC")
+
+        configs = ConfigCollection.from_github_repo(tmp_path / "jetstream")
+        assert configs.outcomes is not None
+
+        configs = configs.as_of(pytz.UTC.localize(datetime.datetime(2023, 5, 21)))
+        assert configs.outcomes is not None
