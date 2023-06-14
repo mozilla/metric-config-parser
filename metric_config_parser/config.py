@@ -542,10 +542,6 @@ class ConfigCollection:
                                 is_tmp_repo=True,
                             )
                             could_load_configs = True
-                            print(
-                                f"Error parsing config files as of {timestamp}: {e}. "
-                                + f"Using newer version instead of commit {newer_commit.hexsha}"
-                            )
                             break
                         except Exception:
                             # continue searching
