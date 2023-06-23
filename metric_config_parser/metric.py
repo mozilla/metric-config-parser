@@ -66,14 +66,15 @@ class Metric:
     """
 
     name: str
-    data_source: DataSource
-    select_expression: str
+    data_source: Optional[DataSource]
+    select_expression: Optional[str]
     friendly_name: Optional[str] = None
     description: Optional[str] = None
     bigger_is_better: bool = True
     analysis_bases: List[AnalysisBasis] = [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]
     type: str = "scalar"
     category: Optional[str] = None
+    depends_on: Optional[List[Summary]] = None
 
 
 @attr.s(auto_attribs=True)
@@ -119,6 +120,7 @@ class MetricDefinition:
     analysis_bases: Optional[List[AnalysisBasis]] = None
     type: Optional[str] = None
     category: Optional[str] = None
+    depends_on: Optional[List[MetricReference]] = None
 
     @staticmethod
     def generate_select_expression(
@@ -164,22 +166,58 @@ class MetricDefinition:
     ) -> List[Summary]:
         metric_summary = None
         metric = None
+        upstream_metrics = None
+
+        # check if metric depends on other metrics
+        if self.depends_on:
+            upstream_metrics = []
+            # resolve upstream metrics
+            for metric_ref in self.depends_on:
+                # check if upstream metric is defined externally as a "definition"
+                upstream_metric = configs.get_metric_definition(metric_ref.name, conf.app_name)
+
+                if upstream_metric is None:
+                    # check if upstream metric is part of the analysis spec
+                    upstream_metric = spec.metrics.definitions.get(metric_ref.name, None)
+
+                if upstream_metric is None:
+                    raise DefinitionNotFound(
+                        f"No definition found for referenced upstream metric {metric_ref}"
+                    )
+
+                upstream_metrics += upstream_metric.resolve(spec, conf, configs)
 
         if self.select_expression is None or self.data_source is None:
             # checks if a metric from mozanalysis was referenced
             metric_definition = configs.get_metric_definition(self.name, conf.app_name)
 
-            if metric_definition is None:
+            if metric_definition is None and upstream_metrics is None:
                 raise DefinitionNotFound(
                     f"No default definition found for referenced metric {self.name}"
                 )
-
-            metric_definition.analysis_bases = self.analysis_bases or [
-                AnalysisBasis.ENROLLMENTS,
-                AnalysisBasis.EXPOSURES,
-            ]
-            metric_definition.statistics = self.statistics
-            metric_summary = metric_definition.resolve(spec, conf, configs)
+            elif upstream_metrics:
+                metric = Metric(
+                    name=self.name,
+                    data_source=None,
+                    select_expression=None,
+                    friendly_name=dedent(self.friendly_name)
+                    if self.friendly_name
+                    else self.friendly_name,
+                    description=dedent(self.description) if self.description else self.description,
+                    bigger_is_better=self.bigger_is_better,
+                    analysis_bases=self.analysis_bases
+                    or [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES],
+                    type=self.type or "scalar",
+                    category=self.category,
+                    depends_on=upstream_metrics,
+                )
+            elif metric_definition:
+                metric_definition.analysis_bases = self.analysis_bases or [
+                    AnalysisBasis.ENROLLMENTS,
+                    AnalysisBasis.EXPOSURES,
+                ]
+                metric_definition.statistics = self.statistics
+                metric_summary = metric_definition.resolve(spec, conf, configs)
         else:
             select_expression = self.generate_select_expression(
                 spec.parameters.definitions,
@@ -200,6 +238,7 @@ class MetricDefinition:
                 or [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES],
                 type=self.type or "scalar",
                 category=self.category,
+                depends_on=upstream_metrics,
             )
 
         metrics_with_treatments = []
