@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import attr
 import jinja2
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 from metric_config_parser.errors import DefinitionNotFound
 
@@ -21,13 +22,6 @@ from .parameter import ParameterDefinition
 from .pre_treatment import PreTreatmentReference
 from .statistic import Statistic
 from .util import converter
-
-
-class AnalysisBasis(Enum):
-    """Determines what the population used for the analysis will be based on."""
-
-    ENROLLMENTS = "enrollments"
-    EXPOSURES = "exposures"
 
 
 class AnalysisPeriod(Enum):

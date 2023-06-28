@@ -4,16 +4,13 @@ from textwrap import dedent
 import pytest
 import toml
 from cattrs.errors import ClassValidationError
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 from metric_config_parser.analysis import AnalysisConfiguration, AnalysisSpec
 from metric_config_parser.data_source import DataSource
 from metric_config_parser.errors import InvalidConfigurationException
 from metric_config_parser.exposure_signal import AnalysisWindow, ExposureSignal
-from metric_config_parser.metric import (
-    AnalysisBasis,
-    AnalysisPeriod,
-    DefinitionNotFound,
-)
+from metric_config_parser.metric import AnalysisPeriod, DefinitionNotFound
 from metric_config_parser.parameter import ParameterDefinition, ParameterSpec
 
 TEST_DIR = Path(__file__).parent
