@@ -8,6 +8,7 @@ import attr
 import jinja2
 
 from metric_config_parser.errors import DefinitionNotFound
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 if TYPE_CHECKING:
     from .analysis import AnalysisSpec
@@ -22,12 +23,6 @@ from .pre_treatment import PreTreatmentReference
 from .statistic import Statistic
 from .util import converter
 
-
-class AnalysisBasis(Enum):
-    """Determines what the population used for the analysis will be based on."""
-
-    ENROLLMENTS = "enrollments"
-    EXPOSURES = "exposures"
 
 
 class AnalysisPeriod(Enum):
