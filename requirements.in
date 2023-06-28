@@ -125,7 +125,7 @@ types-toml==0.10.8.6
     # via mozilla-metric-config-parser
 types-urllib3==1.26.25.10
     # via types-requests
-typing-extensions==4.5.0
+typing-extensions==4.6.3
     # via mypy
 urllib3==1.26.15
     # via requests
