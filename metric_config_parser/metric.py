@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import attr
 import jinja2
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 from metric_config_parser.errors import DefinitionNotFound
-from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 if TYPE_CHECKING:
     from .analysis import AnalysisSpec
@@ -22,7 +22,6 @@ from .parameter import ParameterDefinition
 from .pre_treatment import PreTreatmentReference
 from .statistic import Statistic
 from .util import converter
-
 
 
 class AnalysisPeriod(Enum):
