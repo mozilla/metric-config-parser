@@ -53,6 +53,7 @@ setup(
         "pytz",
         "requests",
         "toml",
+        "mozilla-nimbus-schemas",
     ],
     include_package_data=True,
     tests_require=test_dependencies,
@@ -64,5 +65,5 @@ setup(
         [console_scripts]
         metric-config-parser=metric_config_parser.cli:cli
     """,
-    version="2023.6.6",
+    version="2023.6.7",
 )
