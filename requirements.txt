@@ -194,10 +194,7 @@ coverage[toml]==7.2.2 \
 exceptiongroup==1.1.1 \
     --hash=sha256:232c37c63e4f682982c8b6459f33a8981039e5fb8756b2074364e5055c498c9e \
     --hash=sha256:d484c3090ba2889ae2928419117447a14daf3c1231d5e30d0aae34f354f01785
-    # via
-    #   -r requirements.in
-    #   cattrs
-    #   pytest
+    # via -r requirements.in
 flake8==6.0.0 \
     --hash=sha256:3833794e27ff64ea4e9cf5d410082a8b97ff1a06c16aa3d2027339cd0f1195c7 \
     --hash=sha256:c61007e76655af75e6785a931f452915b371dc48f56efd765247c8fe68f2b181
@@ -493,12 +490,7 @@ toml==0.10.2 \
 tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via
-    #   -r requirements.in
-    #   black
-    #   coverage
-    #   mypy
-    #   pytest
+    # via -r requirements.in
 types-futures==3.3.8 \
     --hash=sha256:6fe8ccc2c2af7ef2fdd9bf73eab6d617074f09f30ad7d373510b4043d39c42de \
     --hash=sha256:d6e97ec51d56b96debfbf1dea32ebec22c1687f16d2547ea0a34b48db45df205
@@ -531,9 +523,9 @@ types-toml==0.10.8.6 \
     --hash=sha256:6d3ac79e36c9ee593c5d4fb33a50cca0e3adceb6ef5cff8b8e5aef67b4c4aaf2 \
     --hash=sha256:de7b2bb1831d6f7a4b554671ffe5875e729753496961b3e9b202745e4955dafa
     # via -r requirements.in
-types-urllib3==1.26.25.10 \
-    --hash=sha256:12c744609d588340a07e45d333bf870069fc8793bcf96bae7a96d4712a42591d \
-    --hash=sha256:c44881cde9fc8256d05ad6b21f50c4681eb20092552351570ab0a8a0653286d6
+types-urllib3==1.26.25.14 \
+    --hash=sha256:229b7f577c951b8c1b92c1bc2b2fdb0b49847bd2af6d1cc2a2e3dd340f3bda8f \
+    --hash=sha256:9683bbb7fb72e32bfe9d2be6e04875fbe1b3eeec3cbb4ea231435aa7fd6b4f0e
     # via
     #   -r requirements.in
     #   types-requests
