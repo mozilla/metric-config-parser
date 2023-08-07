@@ -194,10 +194,7 @@ coverage[toml]==7.2.2 \
 exceptiongroup==1.1.1 \
     --hash=sha256:232c37c63e4f682982c8b6459f33a8981039e5fb8756b2074364e5055c498c9e \
     --hash=sha256:d484c3090ba2889ae2928419117447a14daf3c1231d5e30d0aae34f354f01785
-    # via
-    #   -r requirements.in
-    #   cattrs
-    #   pytest
+    # via -r requirements.in
 flake8==6.0.0 \
     --hash=sha256:3833794e27ff64ea4e9cf5d410082a8b97ff1a06c16aa3d2027339cd0f1195c7 \
     --hash=sha256:c61007e76655af75e6785a931f452915b371dc48f56efd765247c8fe68f2b181
@@ -220,9 +217,9 @@ idna==3.4 \
     # via
     #   -r requirements.in
     #   requests
-importlib-resources==5.12.0 \
-    --hash=sha256:4be82589bf5c1d7999aedf2a45159d10cb3ca4f19b2271f8792bc8e6da7b22f6 \
-    --hash=sha256:7b1deeebbf351c7578e09bf2f63fa2ce8b5ffec296e0d349139d43cca061a81a
+importlib-resources==6.0.1 \
+    --hash=sha256:134832a506243891221b88b4ae1213327eea96ceb4e407a00d790bb0626f45cf \
+    --hash=sha256:4359457e42708462b9626a04657c6208ad799ceb41e5c58c57ffa0e6a098a5d4
     # via -r requirements.in
 iniconfig==2.0.0 \
     --hash=sha256:2d91e135bf72d31a410b17c16da610a82cb55f6b0477d1a902134b24a455b8b3 \
@@ -493,12 +490,7 @@ toml==0.10.2 \
 tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via
-    #   -r requirements.in
-    #   black
-    #   coverage
-    #   mypy
-    #   pytest
+    # via -r requirements.in
 types-futures==3.3.8 \
     --hash=sha256:6fe8ccc2c2af7ef2fdd9bf73eab6d617074f09f30ad7d373510b4043d39c42de \
     --hash=sha256:d6e97ec51d56b96debfbf1dea32ebec22c1687f16d2547ea0a34b48db45df205
