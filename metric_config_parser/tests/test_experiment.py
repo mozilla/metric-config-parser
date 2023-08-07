@@ -234,6 +234,18 @@ class TestExperimentConf:
         cfg = spec.resolve(experiments[7], config_collection)
         assert cfg.experiment.enrollment_period == 3
 
+    def test_enrollment_end_date_precedence_over_proposed_enrollment(
+        self, experiments, config_collection
+    ):
+        conf = dedent(
+            """
+            [experiment]
+            """
+        )
+        spec = AnalysisSpec.from_dict(toml.loads(conf))
+        cfg = spec.resolve(experiments[8], config_collection)
+        assert cfg.experiment.enrollment_period == 34
+
     def test_enrollment_end_date_overwrite(self, experiments, config_collection):
         conf = dedent(
             """
