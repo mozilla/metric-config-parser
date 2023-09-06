@@ -121,7 +121,7 @@ types-requests==2.28.11.17
     # via mozilla-metric-config-parser
 types-six==1.16.21.8
     # via mozilla-metric-config-parser
-types-toml==0.10.8.6
+types-toml==0.10.8.7
     # via mozilla-metric-config-parser
 types-urllib3==1.26.25.10
     # via types-requests
