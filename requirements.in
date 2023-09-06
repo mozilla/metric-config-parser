@@ -12,7 +12,7 @@ attrs==22.2.0
     #   pytest
 black==23.1.0
     # via pytest-black
-cattrs==22.2.0
+cattrs==23.1.2
     # via mozilla-metric-config-parser
 certifi==2022.12.7
     # via requests
