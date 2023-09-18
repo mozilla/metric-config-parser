@@ -54,14 +54,17 @@ class Config:
             if self.is_private and resolved.experiment.dataset_id is None:
                 raise ValueError("dataset_id needs to be explicitly set for private experiments")
         elif isinstance(self.spec, MonitoringSpec):
+            platform = (
+                experiment.app_name if experiment else self.spec.project.platform
+            ) or "firefox_desktop"
             monitoring_spec = MonitoringSpec.default_for_platform_or_type(
-                (experiment.app_name if experiment else self.spec.project.platform)
-                or "firefox_desktop",
+                platform,
                 configs,
             )
             if experiment and experiment.is_rollout:
-                rollout_spec = MonitoringSpec.default_for_platform_or_type("rollout", configs)
-                monitoring_spec.merge(rollout_spec)
+                if platform == "firefox_desktop":
+                    rollout_spec = MonitoringSpec.default_for_platform_or_type("rollout", configs)
+                    monitoring_spec.merge(rollout_spec)
             monitoring_spec.merge(self.spec)
             monitoring_spec.resolve(experiment, configs)
 
