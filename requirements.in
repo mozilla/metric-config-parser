@@ -113,7 +113,7 @@ types-pkg-resources==0.1.3
     # via mozilla-metric-config-parser
 types-protobuf==4.22.0.0
     # via mozilla-metric-config-parser
-types-pytz==2023.2.0.1
+types-pytz==2023.3.1.0
     # via mozilla-metric-config-parser
 types-pyyaml==6.0.12.9
     # via mozilla-metric-config-parser
