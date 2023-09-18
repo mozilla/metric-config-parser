@@ -95,7 +95,7 @@ pytz==2023.2
     # via mozilla-metric-config-parser
 requests==2.28.2
     # via mozilla-metric-config-parser
-smmap==5.0.0
+smmap==5.0.1
     # via gitdb
 toml==0.10.2
     # via
