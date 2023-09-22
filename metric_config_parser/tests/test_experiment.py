@@ -267,6 +267,28 @@ class TestExperimentConf:
         cfg = spec.resolve(experiments[7], config_collection)
         assert cfg.experiment.dataset_id == "test"
 
+    def test_sample_size_defined_experiment(self, experiments, config_collection):
+        conf = dedent(
+            """
+            [experiment]
+            sample_size = 8
+            """
+        )
+        spec = AnalysisSpec.from_dict(toml.loads(conf))
+        cfg = spec.resolve(experiments[7], config_collection)
+        assert cfg.experiment.sample_size == 8
+
+    def test_sample_size_none_experiment(self, experiments, config_collection):
+        conf = dedent(
+            """
+            [experiment]
+            enrollment_period = 7
+            """
+        )
+        spec = AnalysisSpec.from_dict(toml.loads(conf))
+        cfg = spec.resolve(experiments[7], config_collection)
+        assert cfg.experiment.sample_size is None
+
 
 class TestDefaultConfiguration:
     def test_descriptions_defined(self, experiments, config_collection):

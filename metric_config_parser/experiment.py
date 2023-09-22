@@ -95,6 +95,8 @@ class ExperimentConfiguration:
     experiment: "Experiment"
     segments: List[Segment]
     exposure_signal: Optional[ExposureSignal] = None
+    # int <= 100 represents the percentage of clients for downsampling enrollments
+    sample_size: Optional[int] = None
 
     def __attrs_post_init__(self):
         # Catch any exceptions at instantiation
@@ -253,6 +255,7 @@ class ExperimentSpec:
     exposure_signal: Optional[ExposureSignalDefinition] = None
     is_private: bool = False
     dataset_id: Optional[str] = attr.ib(default=None, validator=_validate_dataset_id)
+    sample_size: Optional[int] = None
 
     def resolve(
         self, spec: "AnalysisSpec", experiment: "Experiment", configs: "ConfigCollection"
@@ -263,6 +266,8 @@ class ExperimentSpec:
         experiment_config.segments = [
             ref.resolve(spec, experiment_config, configs) for ref in self.segments
         ]
+
+        experiment_config.sample_size = self.sample_size
 
         if self.exposure_signal:
             experiment_config.exposure_signal = self.exposure_signal.resolve(
