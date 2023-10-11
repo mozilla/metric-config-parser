@@ -55,6 +55,13 @@ class TestConfigIntegration:
         assert config_collection.configs is not None
         assert len(config_collection.definitions) > 0
 
+    def test_config_collection_from_branch(self):
+        config_collection = ConfigCollection.from_github_repo(
+            "https://github.com/mozilla/metric-hub/tree/main",
+            "https://github.com/mozilla/metric-hub/tree/main/jetstream/",
+        )
+        assert len(config_collection.configs) > 0
+
     def test_config_as_of(self):
         config_collection = ConfigCollection.from_github_repo(
             "https://github.com/mozilla/metric-hub/tree/main/jetstream"
