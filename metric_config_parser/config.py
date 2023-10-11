@@ -347,6 +347,8 @@ class ConfigCollection:
             tmp_dir = Path(tempfile.mkdtemp())
             is_tmp_repo = True
             if repo_url is not None and "/tree/" in repo_url:
+                if not repo_url.endswith("/"):
+                    repo_url += "/"
                 repo_url, tree = repo_url.split("/tree/")
                 branch, path = tree.split("/", 1)
                 repo = Repo.clone_from(repo_url or cls.repo_url, tmp_dir)
