@@ -125,13 +125,13 @@ class AnalysisSpec:
 
         # metrics defined in outcome snippets are only computed for
         # weekly and overall analysis windows
-        self.metrics.merge(
-            MetricsSpec(
+        outcome_spec = MetricsSpec(
                 daily=[], weekly=metrics, days28=[], overall=metrics, definitions=other.metrics
-            ),
-            prefer_default=True,
-        )
-        self.data_sources.merge(other.data_sources, prefer_default=True)
+            )
+        outcome_spec.merge(self.metrics)
+        other.data_sources.merge(self.data_sources)
+        self.data_sources = other.data_sources
+        self.metrics = outcome_spec
 
         if other.parameters:
             self.merge_parameters(other.parameters)
