@@ -280,6 +280,34 @@ class TestAnalysisSpec:
         assert len([m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"]) == 1
         assert len([m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "foo"]) == 1
 
+    def test_resolve_config_override_outcome_metric(self, experiments, config_collection):
+        custom_conf = dedent(
+            """
+            [metrics]
+            weekly = ["meals_eaten"]
+
+            [metrics.meals_eaten]
+            data_source = "main"
+            select_expression = "2"
+            """
+        )
+
+        spec = AnalysisSpec.from_dict(toml.loads(custom_conf))
+        cfg = spec.resolve(experiments[5], config_collection)
+
+        meals_eaten = [
+            m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "meals_eaten"
+        ][0]
+
+        assert len(cfg.metrics[AnalysisPeriod.WEEK]) == 2
+        assert meals_eaten.metric.name == "meals_eaten"
+        assert meals_eaten.metric.data_source.name == "main"
+        assert meals_eaten.metric.select_expression == "2"
+        assert meals_eaten.metric.friendly_name == "Meals eaten"
+        assert meals_eaten.metric.description == "Number of consumed meals"
+        assert meals_eaten.statistic.name == "bootstrap_mean"
+        assert meals_eaten.statistic.params["num_samples"] == 10
+
     def test_merge_configs_override_metric(self, experiments, config_collection):
         orig_conf = dedent(
             """

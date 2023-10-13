@@ -153,10 +153,13 @@ class DataSourceDefinition:
             params["experiments_column_type"] = None
         return DataSource(**params)
 
-    def merge(self, other: "DataSourceDefinition"):
+    def merge(self, other: "DataSourceDefinition", prefer_default: bool = False):
         """Merge with another data source definition."""
         for key in attr.fields_dict(type(self)):
-            setattr(self, key, getattr(other, key) or getattr(self, key))
+            if prefer_default:
+                setattr(self, key, getattr(self, key) or getattr(other, key))
+            else:
+                setattr(self, key, getattr(other, key) or getattr(self, key))
 
 
 @attr.s(auto_attribs=True)
@@ -178,15 +181,16 @@ class DataSourcesSpec:
         }
         return cls(definitions)
 
-    def merge(self, other: "DataSourcesSpec"):
+    def merge(self, other: "DataSourcesSpec", prefer_default: bool = False):
         """
         Merge another datasource spec into the current one.
-        The `other` DataSourcesSpec overwrites existing keys.
+        The `other` DataSourcesSpec overwrites existing keys,
+        unless prefer_default is True.
         """
         seen = []
         for key, _ in self.definitions.items():
             if key in other.definitions:
-                self.definitions[key].merge(other.definitions[key])
+                self.definitions[key].merge(other.definitions[key], prefer_default=prefer_default)
             seen.append(key)
         for key, definition in other.definitions.items():
             if key not in seen:

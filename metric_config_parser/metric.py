@@ -287,10 +287,13 @@ class MetricDefinition:
 
         return metrics_with_treatments
 
-    def merge(self, other: "MetricDefinition"):
+    def merge(self, other: "MetricDefinition", prefer_default: bool = False):
         """Merge with another metric definition."""
         for key in attr.fields_dict(type(self)):
-            setattr(self, key, getattr(other, key) or getattr(self, key))
+            if prefer_default:
+                setattr(self, key, getattr(self, key) or getattr(other, key))
+            else:
+                setattr(self, key, getattr(other, key) or getattr(self, key))
 
 
 MetricsConfigurationType = Dict[AnalysisPeriod, List[Summary]]
@@ -356,11 +359,12 @@ class MetricsSpec:
 
         return result
 
-    def merge(self, other: "MetricsSpec"):
+    def merge(self, other: "MetricsSpec", prefer_default: bool = False):
         """
         Merges another metrics spec into the current one.
 
-        The `other` MetricsSpec overwrites existing metrics.
+        The `other` MetricsSpec overwrites existing metrics,
+        unless prefer_default is True.
         """
         self.daily += other.daily
         self.weekly += other.weekly
@@ -370,7 +374,7 @@ class MetricsSpec:
         seen = []
         for key, _ in self.definitions.items():
             if key in other.definitions:
-                self.definitions[key].merge(other.definitions[key])
+                self.definitions[key].merge(other.definitions[key], prefer_default=prefer_default)
             seen.append(key)
         for key, definition in other.definitions.items():
             if key not in seen:

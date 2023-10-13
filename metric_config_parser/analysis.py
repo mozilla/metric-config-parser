@@ -128,9 +128,10 @@ class AnalysisSpec:
         self.metrics.merge(
             MetricsSpec(
                 daily=[], weekly=metrics, days28=[], overall=metrics, definitions=other.metrics
-            )
+            ),
+            prefer_default=True,
         )
-        self.data_sources.merge(other.data_sources)
+        self.data_sources.merge(other.data_sources, prefer_default=True)
 
         if other.parameters:
             self.merge_parameters(other.parameters)
