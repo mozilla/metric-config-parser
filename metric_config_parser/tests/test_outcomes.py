@@ -117,6 +117,8 @@ class TestOutcomes:
         cfg = spec.resolve(experiments[6], config_collection)
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
+        assert len(weekly_metrics) == 3
+
         assert "id" in spec.parameters.definitions
         assert spec.parameters.definitions["id"].default == "700"
         assert spec.parameters.definitions["id"].value == "123"
@@ -124,10 +126,14 @@ class TestOutcomes:
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
 
-        assert (
-            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression
-            == "COUNTIF(sample_id = 123)"
+        outcome_metric = next(
+            (
+                m.metric
+                for m in cfg.metrics[AnalysisPeriod.WEEK]
+                if m.metric.name == "sample_id_count"
+            )
         )
+        assert outcome_metric.select_expression == "COUNTIF(sample_id = 123)"
 
     def test_resolving_parameters_distinct_by_branch(self, experiments, config_collection):
         config_str = dedent(
@@ -162,6 +168,8 @@ class TestOutcomes:
         cfg = spec.resolve(experiments[6], config_collection)
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
+        assert len(weekly_metrics) == 3
+
         assert "id" in spec.parameters.definitions
         assert spec.parameters.definitions["id"].value["branch_1"] == "123"
         assert spec.parameters.definitions["id"].value["branch_2"] == "456"
@@ -170,7 +178,14 @@ class TestOutcomes:
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
 
-        assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
+        outcome_metric = next(
+            (
+                m.metric
+                for m in cfg.metrics[AnalysisPeriod.WEEK]
+                if m.metric.name == "sample_id_count"
+            )
+        )
+        assert outcome_metric.select_expression == (
             """COUNTIF(sample_id = CASE e.branch """
             """WHEN "branch_3" THEN "444" WHEN "branch_1" """
             """THEN "123" WHEN "branch_2" THEN "456" END)"""
@@ -200,6 +215,8 @@ class TestOutcomes:
         cfg = spec.resolve(experiments[6], config_collection)
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
+        assert len(weekly_metrics) == 3
+
         assert "id" in spec.parameters.definitions
         assert spec.parameters.definitions["id"].value == "700"
         assert spec.parameters.definitions["id"].default == "700"
@@ -207,10 +224,14 @@ class TestOutcomes:
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
 
-        assert (
-            cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression
-            == "COUNTIF(sample_id = 700)"
+        outcome_metric = next(
+            (
+                m.metric
+                for m in cfg.metrics[AnalysisPeriod.WEEK]
+                if m.metric.name == "sample_id_count"
+            )
         )
+        assert outcome_metric.select_expression == "COUNTIF(sample_id = 700)"
 
     def test_resolving_parameters_default_value_distinct_by_branch(
         self, experiments, config_collection
@@ -244,6 +265,8 @@ class TestOutcomes:
         cfg = spec.resolve(experiments[7], config_collection)
         weekly_metrics = [s.metric.name for s in cfg.metrics[AnalysisPeriod.WEEK]]
 
+        assert len(weekly_metrics) == 3
+
         assert "id" in spec.parameters.definitions
         assert isinstance(spec.parameters.definitions["id"].default, dict)
 
@@ -257,7 +280,14 @@ class TestOutcomes:
         assert "view_about_logins" in weekly_metrics
         assert "my_cool_metric" in weekly_metrics
 
-        assert cfg.metrics[AnalysisPeriod.WEEK][0].metric.select_expression == (
+        outcome_metric = next(
+            (
+                m.metric
+                for m in cfg.metrics[AnalysisPeriod.WEEK]
+                if m.metric.name == "sample_id_count"
+            )
+        )
+        assert outcome_metric.select_expression == (
             """COUNTIF(sample_id = CASE e.branch """
             """WHEN "branch_1" THEN "1" WHEN "branch_2" THEN "2" END)"""
         )
