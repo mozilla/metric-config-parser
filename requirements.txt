@@ -11,7 +11,6 @@ attrs==22.2.0 \
     #   -r requirements.in
     #   cattrs
     #   jsonschema
-    #   pytest
 black==23.1.0 \
     --hash=sha256:0052dba51dec07ed029ed61b18183942043e00008ec65d5028814afaab9a22fd \
     --hash=sha256:0680d4380db3719ebcfb2613f34e86c8e6d15ffeabcf8ec59355c5e7b85bb555 \
@@ -459,9 +458,9 @@ pyrsistent==0.19.3 \
     # via
     #   -r requirements.in
     #   jsonschema
-pytest==7.2.2 \
-    --hash=sha256:130328f552dcfac0b1cec75c12e3f005619dc5f874f0a06e8ff7263f0ee6225e \
-    --hash=sha256:c99ab0c73aceb050f68929bc93af19ab6db0558791c6a0715723abe9d0ade9d4
+pytest==7.4.3 \
+    --hash=sha256:0d009c083ea859a71b76adf7c1d502e4bc170b80a8ef002da5806527b9591fac \
+    --hash=sha256:d989d136982de4e3b29dabcc838ad581c64e8ed52c11fbe86ddebd9da0818cd5
     # via
     #   -r requirements.in
     #   pytest-black
