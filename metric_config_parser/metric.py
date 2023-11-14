@@ -321,7 +321,7 @@ class MetricsSpec:
     days28: List[MetricReference] = attr.Factory(list)
     overall: List[MetricReference] = attr.Factory(list)
     week_preenrollment: List[MetricReference] = attr.Factory(list)
-    days28_preenrollment: List[MetricReference] = attr.Factory(list)    
+    days28_preenrollment: List[MetricReference] = attr.Factory(list)
     definitions: Dict[str, MetricDefinition] = attr.Factory(dict)
 
     @classmethod
