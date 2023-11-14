@@ -29,15 +29,31 @@ class AnalysisPeriod(Enum):
     WEEK = "week"
     DAYS_28 = "days28"
     OVERALL = "overall"
+    WEEK_PREENROLLMENT = "week_preenrollment"
+    DAYS_28_PREENROLLMENT = "days28_preenrollment"
 
     @property
     def mozanalysis_label(self) -> str:
-        d = {"day": "daily", "week": "weekly", "days28": "28_day", "overall": "overall"}
+        d = {
+            "day": "daily",
+            "week": "weekly",
+            "days28": "28_day",
+            "overall": "overall",
+            "week_preenrollment": "week_preenrollment",
+            "days28_preenrollment": "days28_preenrollment",
+        }
         return d[self.value]
 
     @property
     def table_suffix(self) -> str:
-        d = {"day": "daily", "week": "weekly", "days28": "days28", "overall": "overall"}
+        d = {
+            "day": "daily",
+            "week": "weekly",
+            "days28": "days28",
+            "overall": "overall",
+            "week_preenrollment": "week_preenrollment",
+            "days28_preenrollment": "days28_preenrollment",
+        }
         return d[self.value]
 
 
@@ -304,6 +320,8 @@ class MetricsSpec:
     weekly: List[MetricReference] = attr.Factory(list)
     days28: List[MetricReference] = attr.Factory(list)
     overall: List[MetricReference] = attr.Factory(list)
+    week_preenrollment: List[MetricReference] = attr.Factory(list)
+    days28_preenrollment: List[MetricReference] = attr.Factory(list)    
     definitions: Dict[str, MetricDefinition] = attr.Factory(dict)
 
     @classmethod
@@ -313,6 +331,8 @@ class MetricsSpec:
         for k in known_keys:
             if k == "days28":
                 v = d.get("28_day", [])
+            elif k == "days28_preenrollment":
+                v = d.get("28_day_preenrollment", [])
             else:
                 v = d.get(k, [])
             if not isinstance(v, list):
@@ -324,7 +344,7 @@ class MetricsSpec:
                 {"name": k, **dict((kk.lower(), vv) for kk, vv in v.items())}, MetricDefinition
             )
             for k, v in d.items()
-            if k not in known_keys and k != "28_day"
+            if k not in known_keys and k not in ("28_day", "28_day_preenrollment")
         }
 
         return cls(**params)
@@ -366,6 +386,8 @@ class MetricsSpec:
         self.weekly += other.weekly
         self.days28 += other.days28
         self.overall += other.overall
+        self.week_preenrollment += other.week_preenrollment
+        self.days28_preenrollment += other.days28_preenrollment
 
         seen = []
         for key, _ in self.definitions.items():
