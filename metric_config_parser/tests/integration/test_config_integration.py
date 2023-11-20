@@ -3,10 +3,47 @@ from pathlib import Path
 
 from pytz import UTC
 
+from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.config import ConfigCollection
+from metric_config_parser.experiment import Channel, Experiment
+from metric_config_parser.metric import AnalysisPeriod
 
 
 class TestConfigIntegration:
+    def test_overall_retention_regression(self):
+        config_collection = ConfigCollection.from_github_repos(
+            [
+                "https://github.com/mozilla/metric-hub",
+                "https://github.com/mozilla/metric-hub/tree/main/jetstream",
+            ]
+        )
+        experiment_slug = "ios-onboarding-search-widget"
+        config_collection.as_of(datetime.fromisoformat("2023-11-16T21:44:49+00:00"))
+        experiment = Experiment(
+            experimenter_slug=None,
+            normandy_slug=experiment_slug,
+            type="v6",
+            status="Complete",
+            branches=["control", "treatment-a", "treatment-b"],
+            reference_branch="control",
+            is_high_population=False,
+            start_date=datetime(2023, 9, 12),
+            proposed_enrollment=14,
+            enrollment_end_date=datetime(2023, 9, 26),
+            end_date=datetime(2023, 10, 24),
+            app_name="firefox_ios",
+            channel=Channel.RELEASE,
+            is_enrollment_paused=True,
+            outcomes=["onboarding"],
+        )
+        spec = AnalysisSpec.default_for_experiment(experiment, config_collection)
+        experiment_config = spec.resolve(experiment, config_collection)
+
+        overall_metric_names = [
+            summary.metric.name for summary in experiment_config.metrics[AnalysisPeriod.OVERALL]
+        ]
+        assert "retained" not in overall_metric_names
+
     def test_configs_from_repo(self):
         config_collection = ConfigCollection.from_github_repos(
             ["https://github.com/mozilla/metric-hub"]

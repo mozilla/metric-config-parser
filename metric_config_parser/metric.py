@@ -362,10 +362,10 @@ class MetricsSpec:
 
         The `other` MetricsSpec overwrites existing metrics.
         """
-        self.daily += other.daily
-        self.weekly += other.weekly
-        self.days28 += other.days28
-        self.overall += other.overall
+        self.daily = other.daily + self.daily
+        self.weekly = other.weekly + self.weekly
+        self.days28 = other.days28 + self.days28
+        self.overall = other.overall + self.overall
 
         seen = []
         for key, _ in self.definitions.items():
