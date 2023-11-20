@@ -40,8 +40,7 @@ class TestConfigIntegration:
         experiment_config = spec.resolve(experiment, config_collection)
 
         overall_metric_names = [
-            summary.metric.name
-            for summary in experiment_config.metrics[AnalysisPeriod.OVERALL]
+            summary.metric.name for summary in experiment_config.metrics[AnalysisPeriod.OVERALL]
         ]
         assert "retained" not in overall_metric_names
 
