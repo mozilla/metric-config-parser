@@ -3,8 +3,9 @@ from pathlib import Path
 
 from pytz import UTC
 
+from metric_config_parser.analysis import AnalysisSpec
 from metric_config_parser.config import ConfigCollection
-from metric_config_parser.experiment import AnalysisSpec, Channel, Experiment
+from metric_config_parser.experiment import Channel, Experiment
 from metric_config_parser.metric import AnalysisPeriod
 
 
