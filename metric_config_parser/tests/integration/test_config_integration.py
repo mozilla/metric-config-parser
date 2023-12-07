@@ -27,14 +27,14 @@ class TestConfigIntegration:
             branches=["control", "treatment-a", "treatment-b"],
             reference_branch="control",
             is_high_population=False,
-            start_date=datetime(2023, 9, 12),
+            start_date=datetime(2023, 9, 8),
             proposed_enrollment=14,
-            enrollment_end_date=datetime(2023, 9, 26),
-            end_date=datetime(2023, 10, 24),
+            enrollment_end_date=datetime(2023, 9, 19),
+            end_date=datetime(2023, 10, 16),
             app_name="firefox_ios",
             channel=Channel.RELEASE,
             is_enrollment_paused=True,
-            outcomes=["onboarding"],
+            outcomes=["onboarding", "default_browser"],
         )
         spec = AnalysisSpec.default_for_experiment(experiment, config_collection)
         experiment_config = spec.resolve(experiment, config_collection)
@@ -43,6 +43,15 @@ class TestConfigIntegration:
             summary.metric.name for summary in experiment_config.metrics[AnalysisPeriod.OVERALL]
         ]
         assert "retained" not in overall_metric_names
+        assert "opened_as_default" in overall_metric_names
+        assert "default_browser_card_go_to_settings_pressed" in overall_metric_names
+
+        weekly_metric_names = [
+            summary.metric.name for summary in experiment_config.metrics[AnalysisPeriod.WEEK]
+        ]
+        assert "retained" in weekly_metric_names
+        assert "opened_as_default" in weekly_metric_names
+        assert "default_browser_card_go_to_settings_pressed" in weekly_metric_names
 
     def test_configs_from_repo(self):
         config_collection = ConfigCollection.from_github_repos(
