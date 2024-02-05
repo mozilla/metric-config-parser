@@ -382,6 +382,7 @@ class MetricsSpec:
 
         The `other` MetricsSpec overwrites existing metrics.
         """
+
         self.daily += other.daily
         self.weekly += other.weekly
         self.days28 += other.days28
