@@ -17,6 +17,7 @@ from metric_config_parser.config import (
     Outcome,
 )
 from metric_config_parser.errors import DefinitionNotFound
+from metric_config_parser.metric import MetricLevel
 from metric_config_parser.outcome import OutcomeSpec
 
 TEST_DIR = Path(__file__).parent
@@ -431,3 +432,59 @@ class TestConfigIntegration:
 
         configs = configs.as_of(pytz.UTC.localize(datetime.datetime(2023, 5, 21)))
         assert configs.outcomes is not None
+
+    def test_metric_level(self):
+        config_str = dedent(
+            """
+            [metrics.active_hours]
+            select_expression = "1"
+            data_source = "baseline"
+            owner = "me@example.com"
+            category = "test"
+            level = "silver"
+
+            [data_sources.baseline]
+            from_expression = "mozdata.search.baseline"
+            experiments_column_type = "simple"
+            """
+        )
+
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection = ConfigCollection(
+            configs=[], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        metric_definition = config_collection.get_metric_definition(
+            "active_hours", "firefox_desktop"
+        )
+
+        assert metric_definition.level == MetricLevel.SILVER
+        assert metric_definition.owner == "me@example.com"
+        assert metric_definition.category == "test"
+
+    def test_invalid_metric_level(self):
+        config_str = dedent(
+            """
+            [metrics.active_hours]
+            select_expression = "1"
+            data_source = "baseline"
+            level = "invalid"
+
+            [data_sources.baseline]
+            from_expression = "mozdata.search.baseline"
+            experiments_column_type = "simple"
+            """
+        )
+
+        with pytest.raises(Exception):
+            DefinitionConfig(
+                slug="firefox_desktop",
+                platform="firefox_desktop",
+                spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+                last_modified=datetime.datetime.now(),
+            )

@@ -41,6 +41,12 @@ class AnalysisPeriod(Enum):
         return d[self.value]
 
 
+class MetricLevel(Enum):
+    GOLD = "gold"
+    SILVER = "silver"
+    BRONZE = "bronze"
+
+
 @attr.s(auto_attribs=True)
 class Summary:
     """Represents a metric with a statistical treatment."""
@@ -69,6 +75,9 @@ class Metric:
     type: str = "scalar"
     category: Optional[str] = None
     depends_on: Optional[List[Summary]] = None
+    owner: Optional[str] = None
+    deprecated: bool = False
+    level: Optional[MetricLevel] = None
 
 
 @attr.s(auto_attribs=True)
@@ -115,6 +124,9 @@ class MetricDefinition:
     type: Optional[str] = None
     category: Optional[str] = None
     depends_on: Optional[List[MetricReference]] = None
+    owner: Optional[str] = None
+    deprecated: bool = False
+    level: Optional[MetricLevel] = None
 
     @staticmethod
     def generate_select_expression(
@@ -204,6 +216,9 @@ class MetricDefinition:
                     type=self.type or "scalar",
                     category=self.category,
                     depends_on=upstream_metrics,
+                    owner=self.owner,
+                    deprecated=self.deprecated,
+                    level=self.level,
                 )
             elif metric_definition:
                 metric_definition.analysis_bases = self.analysis_bases or [
@@ -233,6 +248,9 @@ class MetricDefinition:
                 type=self.type or "scalar",
                 category=self.category,
                 depends_on=upstream_metrics,
+                owner=self.owner,
+                deprecated=self.deprecated,
+                level=self.level,
             )
 
         metrics_with_treatments = []
