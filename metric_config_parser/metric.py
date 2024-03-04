@@ -349,8 +349,6 @@ class MetricsSpec:
         for k in known_keys:
             if k == "days28":
                 v = d.get("28_day", [])
-            elif k == "days28_preenrollment":
-                v = d.get("28_day_preenrollment", [])
             else:
                 v = d.get(k, [])
             if not isinstance(v, list):
@@ -362,7 +360,7 @@ class MetricsSpec:
                 {"name": k, **dict((kk.lower(), vv) for kk, vv in v.items())}, MetricDefinition
             )
             for k, v in d.items()
-            if k not in known_keys and k not in ("28_day", "28_day_preenrollment")
+            if k not in known_keys and k not in ("28_day")
         }
 
         return cls(**params)
