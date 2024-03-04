@@ -360,7 +360,7 @@ class MetricsSpec:
                 {"name": k, **dict((kk.lower(), vv) for kk, vv in v.items())}, MetricDefinition
             )
             for k, v in d.items()
-            if k not in known_keys and k not in ("28_day")
+            if k not in known_keys and k != "28_day"
         }
 
         return cls(**params)
