@@ -91,7 +91,7 @@ class Metric:
     type: str = "scalar"
     category: Optional[str] = None
     depends_on: Optional[List[Summary]] = None
-    owner: Optional[str] = None
+    owner: Optional[List[str]] = None
     deprecated: bool = False
     level: Optional[MetricLevel] = None
 
@@ -119,6 +119,8 @@ class MetricReference:
 # These are bare strings in the configuration file.
 converter.register_structure_hook(MetricReference, lambda obj, _type: MetricReference(name=obj))
 
+converter.register_structure_hook(Union[str, List[str], None], lambda obj, _type: obj)
+
 
 @attr.s(auto_attribs=True)
 class MetricDefinition:
@@ -140,7 +142,7 @@ class MetricDefinition:
     type: Optional[str] = None
     category: Optional[str] = None
     depends_on: Optional[List[MetricReference]] = None
-    owner: Optional[str] = None
+    owner: Optional[Union[str, List[str]]] = None
     deprecated: bool = False
     level: Optional[MetricLevel] = None
 
@@ -232,7 +234,7 @@ class MetricDefinition:
                     type=self.type or "scalar",
                     category=self.category,
                     depends_on=upstream_metrics,
-                    owner=self.owner,
+                    owner=[self.owner] if isinstance(self.owner, str) else self.owner,
                     deprecated=self.deprecated,
                     level=self.level,
                 )
@@ -264,7 +266,7 @@ class MetricDefinition:
                 type=self.type or "scalar",
                 category=self.category,
                 depends_on=upstream_metrics,
-                owner=self.owner,
+                owner=[self.owner] if isinstance(self.owner, str) else self.owner,
                 deprecated=self.deprecated,
                 level=self.level,
             )
