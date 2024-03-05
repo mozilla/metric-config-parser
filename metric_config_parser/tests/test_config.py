@@ -443,6 +443,13 @@ class TestConfigIntegration:
             category = "test"
             level = "silver"
 
+            [metrics.other_metric]
+            select_expression = "1"
+            data_source = "baseline"
+            owner = ["me@example.com", "you@example.com"]
+            category = "test"
+            level = "gold"
+
             [data_sources.baseline]
             from_expression = "mozdata.search.baseline"
             experiments_column_type = "simple"
@@ -465,6 +472,14 @@ class TestConfigIntegration:
 
         assert metric_definition.level == MetricLevel.SILVER
         assert metric_definition.owner == "me@example.com"
+        assert metric_definition.category == "test"
+
+        metric_definition = config_collection.get_metric_definition(
+            "other_metric", "firefox_desktop"
+        )
+
+        assert metric_definition.level == MetricLevel.GOLD
+        assert metric_definition.owner == ["me@example.com", "you@example.com"]
         assert metric_definition.category == "test"
 
     def test_invalid_metric_level(self):
