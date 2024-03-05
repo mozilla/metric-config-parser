@@ -471,7 +471,7 @@ class TestConfigIntegration:
         )
 
         assert metric_definition.level == MetricLevel.SILVER
-        assert metric_definition.owner == ["me@example.com"]
+        assert metric_definition.owner == "me@example.com"
         assert metric_definition.category == "test"
 
         metric_definition = config_collection.get_metric_definition(
