@@ -54,7 +54,7 @@ mccabe==0.7.0
     # via flake8
     # via -r -
 mozilla-nimbus-schemas==2023.9.2
-mypy==1.1.1
+mypy==1.6.1
     # via mozilla-metric-config-parser
 mypy-extensions==1.0.0
     # via
