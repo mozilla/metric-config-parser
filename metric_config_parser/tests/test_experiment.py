@@ -8,6 +8,7 @@ import toml
 from cattrs.errors import ClassValidationError
 
 from metric_config_parser.analysis import AnalysisSpec
+from metric_config_parser.errors import NoEndDateException
 from metric_config_parser.metric import AnalysisPeriod
 from metric_config_parser.segment import Segment
 
@@ -109,6 +110,61 @@ class TestExperimentSpec:
         assert "1970" not in configured.experiment.segments[1].data_source.from_expression
         assert "{{" not in configured.experiment.segments[1].data_source.from_expression
         assert "2019-12-01" in configured.experiment.segments[1].data_source.from_expression
+
+    def test_end_date_str(self, experiments, config_collection):
+        conf = dedent(
+            """
+            [experiment]
+            segments = ["my_cool_segment"]
+
+            [segments.my_cool_segment]
+            Data_Source = "my_cool_data_source"
+            Select_Expression = "{{agg_any('1')}}"
+
+            [segments.data_sources.my_cool_data_source]
+            from_expression = "(SELECT 1 WHERE submission_date BETWEEN {{experiment.start_date_str}} AND {{experiment.end_date_str}})"
+            """  # noqa
+        )
+
+        spec = AnalysisSpec.from_dict(toml.loads(conf))
+        configured = spec.resolve(experiments[0], config_collection)
+
+        assert len(configured.experiment.segments) == 1
+
+        segment = configured.experiment.segments[0]
+        assert isinstance(segment, Segment)
+
+        assert segment.name == "my_cool_segment"
+
+        assert "agg_any" not in segment.select_expression
+        assert "1970" not in segment.data_source.from_expression
+        assert "{{" not in segment.data_source.from_expression
+        assert "2019-12-01" in segment.data_source.from_expression
+        assert "2020-03-01" in segment.data_source.from_expression
+
+        # Fails when `end_date=None`.
+        with pytest.raises(NoEndDateException):
+            spec = AnalysisSpec.from_dict(toml.loads(conf))
+            configured = spec.resolve(experiments[8], config_collection)
+
+        # Succeeds when `end_date=None` but it's not referenced; note
+        # `last_enrollment_date_str` below.
+        conf = dedent(
+            """
+            [experiment]
+            segments = ["my_cool_segment"]
+
+            [segments.my_cool_segment]
+            Data_Source = "my_cool_data_source"
+            Select_Expression = "{{agg_any('1')}}"
+
+            [segments.data_sources.my_cool_data_source]
+            from_expression = "(SELECT 1 WHERE submission_date BETWEEN {{experiment.start_date_str}} AND {{experiment.last_enrollment_date_str}})"
+            """  # noqa
+        )
+
+        spec = AnalysisSpec.from_dict(toml.loads(conf))
+        configured = spec.resolve(experiments[8], config_collection)
 
     def test_pre_treatment_config(self, experiments, config_collection):
         config_str = dedent(
