@@ -306,9 +306,9 @@ mccabe==0.7.0 \
     # via
     #   -r requirements.in
     #   flake8
-mozilla-nimbus-schemas==2023.9.2 \
-    --hash=sha256:aa23d024bf01e67564d4dfb288397cbea8046961dc246f687a2dff05280dd4d0 \
-    --hash=sha256:ee2cb3cb042f197586689f187742e0a3c4da9090386f3f3ff48691686df6898a
+mozilla-nimbus-schemas==2023.10.3 \
+    --hash=sha256:8771344a63b0d197dbebd8d7955ce8034d0f5063a13899f4da7d8a99803a76da \
+    --hash=sha256:d8ce1a60bfe30d7435d0473ea6cda73217389cc22221a0b79c17fa78a23cf8b5
     # via -r requirements.in
 mypy==1.1.1 \
     --hash=sha256:0a28a76785bf57655a8ea5eb0540a15b0e781c807b5aa798bd463779988fa1d5 \
