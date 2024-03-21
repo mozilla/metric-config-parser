@@ -280,6 +280,7 @@ class Repository:
     main_branch: str
     # indicates whether repository lives in a temporary directory that should be removed on del
     is_tmp_repo: bool = False
+    commit_hash: str = "HEAD"
 
     def __del__(self):
         # remove the temporary directories repos have been saved in
@@ -547,6 +548,7 @@ class ConfigCollection:
                                 is_tmp_repo=True,
                             )
                             could_load_configs = True
+                            rev = newer_commit.hexsha
                             break
                         except Exception:
                             # continue searching
@@ -556,6 +558,7 @@ class ConfigCollection:
                         # there is no newer commit, current state is broken
                         raise e
 
+                repo.commit_hash = rev
                 configs.repos = [repo]  # point to the original repo, instead of the temporary one
 
                 if config_collection is None:
