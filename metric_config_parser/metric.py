@@ -404,7 +404,7 @@ class MetricsSpec:
         self.weekly = other.weekly + self.weekly
         self.days28 = other.days28 + self.days28
         self.overall = other.overall + self.overall
-        self.week_preenrollment = other.week_preenrollment + self.week_preenrollment
+        self.weekly_preenrollment = other.weekly_preenrollment + self.week_preenrollment
         self.days28_preenrollment = other.days28_preenrollment + self.days28_preenrollment
 
         seen = []
