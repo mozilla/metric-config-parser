@@ -29,8 +29,8 @@ class AnalysisPeriod(Enum):
     WEEK = "week"
     DAYS_28 = "days28"
     OVERALL = "overall"
-    WEEK_PREENROLLMENT = "week_preenrollment"
-    DAYS_28_PREENROLLMENT = "days28_preenrollment"
+    PREENROLLMENT_WEEK = "preenrollment_week"
+    PREENROLLMENT_DAYS_28 = "preenrollment_days28"
 
     @property
     def mozanalysis_label(self) -> str:
@@ -39,8 +39,8 @@ class AnalysisPeriod(Enum):
             "week": "weekly",
             "days28": "28_day",
             "overall": "overall",
-            "week_preenrollment": "week_preenrollment",
-            "days28_preenrollment": "days28_preenrollment",
+            "preenrollment_week": "preenrollment_week",
+            "preenrollment_days28": "preenrollment_days28",
         }
         return d[self.value]
 
@@ -51,8 +51,8 @@ class AnalysisPeriod(Enum):
             "week": "weekly",
             "days28": "days28",
             "overall": "overall",
-            "week_preenrollment": "week_preenrollment",
-            "days28_preenrollment": "days28_preenrollment",
+            "preenrollment_week": "preenrollment_weekly",
+            "preenrollment_days28": "preenrollment_days28",
         }
         return d[self.value]
 
@@ -340,8 +340,8 @@ class MetricsSpec:
     weekly: List[MetricReference] = attr.Factory(list)
     days28: List[MetricReference] = attr.Factory(list)
     overall: List[MetricReference] = attr.Factory(list)
-    week_preenrollment: List[MetricReference] = attr.Factory(list)
-    days28_preenrollment: List[MetricReference] = attr.Factory(list)
+    preenrollment_weekly: List[MetricReference] = attr.Factory(list)
+    preenrollment_days28: List[MetricReference] = attr.Factory(list)
     definitions: Dict[str, MetricDefinition] = attr.Factory(dict)
 
     @classmethod
@@ -404,8 +404,8 @@ class MetricsSpec:
         self.weekly = other.weekly + self.weekly
         self.days28 = other.days28 + self.days28
         self.overall = other.overall + self.overall
-        self.week_preenrollment = other.week_preenrollment + self.week_preenrollment
-        self.days28_preenrollment = other.days28_preenrollment + self.days28_preenrollment
+        self.preenrollment_weekly = other.preenrollment_weekly + self.preenrollment_weekly
+        self.preenrollment_days28 = other.preenrollment_days28 + self.preenrollment_days28
 
         seen = []
         for key, _ in self.definitions.items():
