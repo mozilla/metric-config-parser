@@ -51,7 +51,7 @@ class AnalysisPeriod(Enum):
             "week": "weekly",
             "days28": "days28",
             "overall": "overall",
-            "week_preenrollment": "week_preenrollment",
+            "week_preenrollment": "weekly_preenrollment",
             "days28_preenrollment": "days28_preenrollment",
         }
         return d[self.value]
