@@ -1,6 +1,6 @@
 import pytest
 
-from metric_config_parser.metric import MetricDefinition
+from metric_config_parser.metric import AnalysisPeriod, MetricDefinition
 from metric_config_parser.parameter import ParameterDefinition
 
 
@@ -75,3 +75,8 @@ class TestMetricDefinition:
             param_definition, select_template, config_collection
         )
         assert expected == actual
+
+    def test_analysis_periods_conflicts(self):
+        for test_period in AnalysisPeriod:
+            for period in [p for p in AnalysisPeriod if p != test_period]:
+                assert not period.value.startswith(test_period.value)

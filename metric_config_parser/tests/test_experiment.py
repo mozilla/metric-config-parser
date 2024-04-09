@@ -182,7 +182,7 @@ class TestExperimentSpec:
             """
             [metrics]
             days28_preenrollment = ["spam"]
-            week_preenrollment = ["spam"]
+            weekly_preenrollment = ["spam"]
 
             [metrics.spam]
             data_source = "main"
