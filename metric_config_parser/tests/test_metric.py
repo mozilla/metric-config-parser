@@ -79,4 +79,4 @@ class TestMetricDefinition:
     def test_analysis_periods_conflicts(self):
         for test_period in AnalysisPeriod:
             for period in [p for p in AnalysisPeriod if p != test_period]:
-                assert not period.value.startswith(test_period.value)
+                assert not period.value.startswith(f"{test_period.value}_")

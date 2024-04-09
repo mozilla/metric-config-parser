@@ -177,12 +177,12 @@ class TestExperimentSpec:
         assert len(overall_pre_treatments) == 1
         assert overall_pre_treatments[0].name == "remove_nulls"
 
-    def test_preenrollmennt(self, experiments, config_collection):
+    def test_preenrollment(self, experiments, config_collection):
         config_str = dedent(
             """
             [metrics]
-            days28_preenrollment = ["spam"]
-            weekly_preenrollment = ["spam"]
+            preenrollment_days28 = ["spam"]
+            preenrollment_weekly = ["spam"]
 
             [metrics.spam]
             data_source = "main"
@@ -195,14 +195,14 @@ class TestExperimentSpec:
         spec = AnalysisSpec.from_dict(toml.loads(config_str))
         cfg = spec.resolve(experiments[0], config_collection)
         week_metrics = [
-            m for m in cfg.metrics[AnalysisPeriod.WEEK_PREENROLLMENT] if m.metric.name == "spam"
+            m for m in cfg.metrics[AnalysisPeriod.PREENROLLMENT_WEEK] if m.metric.name == "spam"
         ]
 
         assert len(week_metrics) == 1
         assert week_metrics[0].metric.name == "spam"
 
         days28_metrics = [
-            m for m in cfg.metrics[AnalysisPeriod.DAYS_28_PREENROLLMENT] if m.metric.name == "spam"
+            m for m in cfg.metrics[AnalysisPeriod.PREENROLLMENT_DAYS_28] if m.metric.name == "spam"
         ]
 
         assert len(days28_metrics) == 1
