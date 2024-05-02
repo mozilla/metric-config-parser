@@ -1,3 +1,4 @@
+import re
 import shutil
 import tempfile
 from contextlib import contextmanager
@@ -7,7 +8,6 @@ from typing import Optional
 
 import cattr
 import pytz
-import re
 
 converter = cattr.Converter()
 

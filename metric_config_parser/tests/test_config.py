@@ -628,6 +628,9 @@ class TestConfigIntegration:
     def test_merge_with_wildcards(self):
         config_str = dedent(
             """
+            [metrics.test_metric]
+            select_expression = 1
+
             [data_sources.baseline]
             from_expression = "mozdata.search.baseline"
             experiments_column_type = "simple"
@@ -648,6 +651,11 @@ class TestConfigIntegration:
             """
             [data_sources.'*']
             experiments_column_type = "none"
+
+            [metrics.'test_*']
+            data_source = "baseline"
+
+            [metrics.'test_*'.statistics.bootstrap_mean]
             """
         )
         definition = DefinitionConfig(
@@ -658,6 +666,16 @@ class TestConfigIntegration:
         )
         config_collection_2 = ConfigCollection(
             configs=[], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        config_collection_1.get_metric_definition(
+            "test_metric", "firefox_desktop"
+        ).data_source is None
+        assert (
+            config_collection_1.get_data_source_definition(
+                "baseline", "firefox_desktop"
+            ).experiments_column_type
+            == "simple"
         )
 
         config_collection_1.merge(config_collection_2)
@@ -672,6 +690,18 @@ class TestConfigIntegration:
             == "none"
         )
         assert config_collection_1.get_data_source_definition("*", "firefox_desktop") is None
+        assert (
+            config_collection_1.get_metric_definition(
+                "test_metric", "firefox_desktop"
+            ).data_source.name
+            == "baseline"
+        )
+        assert (
+            "bootstrap_mean"
+            in config_collection_1.get_metric_definition(
+                "test_metric", "firefox_desktop"
+            ).statistics
+        )
 
     def test_merge_with_wildcards_invalid(self):
         config_str = dedent(

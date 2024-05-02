@@ -1,9 +1,9 @@
 from enum import Enum
+import fnmatch
+import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import attr
-import fnmatch
-import re
 
 from metric_config_parser.errors import DefinitionNotFound
 
@@ -250,6 +250,7 @@ class DataSourcesSpec:
         seen = set()
         for key, _ in self.definitions.items():
             for other_key in other.definitions:
+                # support wildcard characters in `other`
                 other_key_regex = re.compile(fnmatch.translate(other_key))
                 if other_key_regex.fullmatch(key):
                     self.definitions[key].merge(other.definitions[other_key])
