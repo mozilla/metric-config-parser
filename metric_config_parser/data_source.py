@@ -2,6 +2,8 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import attr
+import fnmatch
+import re
 
 from metric_config_parser.errors import DefinitionNotFound
 
@@ -11,7 +13,7 @@ if TYPE_CHECKING:
     from .definition import DefinitionSpecSub
     from .project import ProjectConfiguration
 
-from .util import converter
+from .util import converter, is_valid_slug
 
 
 class DataSourceJoinRelationship(Enum):
@@ -167,6 +169,12 @@ class DataSourceDefinition:
         conf: Union["ExperimentConfiguration", "ProjectConfiguration"],
         configs: "ConfigCollection",
     ) -> DataSource:
+        if not is_valid_slug(self.name):
+            raise ValueError(
+                f"Invalid identifier found in name {self.name}. "
+                + "Name must at least consist of one character, number or underscore. "
+                + "Wildcard characters are only allowed if matching slug is defined."
+            ) 
         params: Dict[str, Any] = {"name": self.name, "from_expression": self.from_expression}
         # Allow mozanalysis to infer defaults for these values:
         for k in (
@@ -211,7 +219,8 @@ class DataSourceDefinition:
     def merge(self, other: "DataSourceDefinition"):
         """Merge with another data source definition."""
         for key in attr.fields_dict(type(self)):
-            setattr(self, key, getattr(other, key) or getattr(self, key))
+            if key != "name":
+                setattr(self, key, getattr(other, key) or getattr(self, key))
 
 
 @attr.s(auto_attribs=True)
@@ -238,13 +247,16 @@ class DataSourcesSpec:
         Merge another datasource spec into the current one.
         The `other` DataSourcesSpec overwrites existing keys.
         """
-        seen = []
+        seen = set()
         for key, _ in self.definitions.items():
-            if key in other.definitions:
-                self.definitions[key].merge(other.definitions[key])
-            seen.append(key)
+            for other_key in other.definitions:
+                other_key_regex = re.compile(fnmatch.translate(other_key))
+                if other_key_regex.fullmatch(key):
+                    self.definitions[key].merge(other.definitions[other_key])
+                    seen.add(other_key)
+            seen.add(key)
         for key, definition in other.definitions.items():
-            if key not in seen:
+            if key not in seen and is_valid_slug(key):
                 self.definitions[key] = definition
 
 
