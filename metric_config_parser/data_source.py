@@ -1,6 +1,6 @@
-from enum import Enum
 import fnmatch
 import re
+from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import attr
@@ -170,11 +170,15 @@ class DataSourceDefinition:
         configs: "ConfigCollection",
     ) -> DataSource:
         if not is_valid_slug(self.name):
+            # a data source name cannot include a wildcard * because if
+            # it does at this point in the code,
+            # that means it isn't defined anywhere and there's some dangling wildcard
             raise ValueError(
                 f"Invalid identifier found in name {self.name}. "
                 + "Name must at least consist of one character, number or underscore. "
                 + "Wildcard characters are only allowed if matching slug is defined."
-            ) 
+            )
+
         params: Dict[str, Any] = {"name": self.name, "from_expression": self.from_expression}
         # Allow mozanalysis to infer defaults for these values:
         for k in (

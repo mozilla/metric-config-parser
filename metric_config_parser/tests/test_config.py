@@ -630,6 +630,7 @@ class TestConfigIntegration:
             """
             [metrics.test_metric]
             select_expression = 1
+            category = "test"
 
             [data_sources.baseline]
             from_expression = "mozdata.search.baseline"
@@ -654,8 +655,12 @@ class TestConfigIntegration:
 
             [metrics.'test_*']
             data_source = "baseline"
+            category = "test_overwrite_first"
 
             [metrics.'test_*'.statistics.bootstrap_mean]
+
+            [metrics.'test_me*']
+            category = "test_overwrite_second"
             """
         )
         definition = DefinitionConfig(
@@ -701,6 +706,10 @@ class TestConfigIntegration:
             in config_collection_1.get_metric_definition(
                 "test_metric", "firefox_desktop"
             ).statistics
+        )
+        assert (
+            config_collection_1.get_metric_definition("test_metric", "firefox_desktop").category
+            == "test_overwrite_second"
         )
 
     def test_merge_with_wildcards_invalid(self):
@@ -752,4 +761,3 @@ class TestConfigIntegration:
         assert (
             config_collection_1.get_data_source_definition("invalid_*", "firefox_desktop") is None
         )
-
