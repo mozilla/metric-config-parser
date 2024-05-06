@@ -19,6 +19,7 @@ from metric_config_parser.config import (
 from metric_config_parser.errors import DefinitionNotFound
 from metric_config_parser.metric import MetricLevel
 from metric_config_parser.outcome import OutcomeSpec
+from metric_config_parser.data_source import DataSourceJoinRelationship
 
 TEST_DIR = Path(__file__).parent
 
@@ -502,4 +503,107 @@ class TestConfigIntegration:
                 platform="firefox_desktop",
                 spec=AnalysisSpec.from_dict(toml.loads(config_str)),
                 last_modified=datetime.datetime.now(),
+            )
+
+    def test_data_source_joins(self):
+        config_str = dedent(
+            """
+            [data_sources.events]
+            from_expression = "mozdata.telemetry.events"
+            experiments_column_type = "simple"
+
+            [data_sources.metrics]
+            from_expression = "mozdata.telemetry.metrics"
+            experiments_column_type = "simple"
+
+            [data_sources.baseline]
+            from_expression = "mozdata.telemetry.baseline"
+            experiments_column_type = "simple"
+
+            [data_sources.baseline.joins.metrics]
+            on_expression = "metrics.client_id = baseline.client_id"
+            relationship = "many_to_one"
+
+            [data_sources.baseline.joins.events]
+            """
+        )
+
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection = ConfigCollection(
+            configs=[], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        data_source = config_collection.get_data_source_definition(
+            "baseline", "firefox_desktop"
+        ).resolve(definition.spec, None, config_collection)
+
+        assert len(data_source.joins) == 2
+        assert data_source.joins[0].data_source.name == "metrics"
+        assert data_source.joins[0].on_expression == "metrics.client_id = baseline.client_id"
+        assert data_source.joins[0].relationship == DataSourceJoinRelationship.MANY_TO_ONE
+
+        assert data_source.joins[1].data_source.name == "events"
+
+    def test_data_source_joins_invalid(self):
+        config_str = dedent(
+            """
+            [data_sources.baseline]
+            from_expression = "mozdata.telemetry.baseline"
+            experiments_column_type = "simple"
+
+            [data_sources.baseline.joins.non_existing]
+            relationship = "many_to_one"
+            """
+        )
+
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection = ConfigCollection(
+            configs=[], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        with pytest.raises(Exception):
+            config_collection.get_data_source_definition("baseline", "firefox_desktop").resolve(
+                definition.spec, None, config_collection
+            )
+
+    def test_data_source_joins_circular_dependency(self):
+        config_str = dedent(
+            """
+            [data_sources.baseline]
+            from_expression = "mozdata.telemetry.baseline"
+            experiments_column_type = "simple"
+
+            [data_sources.metrics]
+            from_expression = "mozdata.telemetry.metrics"
+            experiments_column_type = "simple"
+
+            [data_sources.baseline.joins.metrics]
+            
+            [data_sources.metrics.joins.baseline]
+            """
+        )
+
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection = ConfigCollection(
+            configs=[], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        with pytest.raises(Exception):
+            config_collection.get_data_source_definition("baseline", "firefox_desktop").resolve(
+                definition.spec, None, config_collection
             )
