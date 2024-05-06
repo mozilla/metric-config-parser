@@ -16,10 +16,10 @@ from metric_config_parser.config import (
     DefinitionConfig,
     Outcome,
 )
+from metric_config_parser.data_source import DataSourceJoinRelationship
 from metric_config_parser.errors import DefinitionNotFound
 from metric_config_parser.metric import MetricLevel
 from metric_config_parser.outcome import OutcomeSpec
-from metric_config_parser.data_source import DataSourceJoinRelationship
 
 TEST_DIR = Path(__file__).parent
 
@@ -588,7 +588,7 @@ class TestConfigIntegration:
             experiments_column_type = "simple"
 
             [data_sources.baseline.joins.metrics]
-            
+
             [data_sources.metrics.joins.baseline]
             """
         )

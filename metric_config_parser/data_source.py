@@ -1,7 +1,7 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union, List
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import attr
-from enum import Enum
 
 from metric_config_parser.errors import DefinitionNotFound
 
@@ -18,6 +18,7 @@ class DataSourceJoinRelationship(Enum):
     ONE_TO_ONE = "one_to_one"
     MANY_TO_ONE = "many_to_one"
     ONE_TO_MANY = "one_to_many"
+    MANY_TO_MANY = "many_to_many"
 
     @staticmethod
     def from_str(label):

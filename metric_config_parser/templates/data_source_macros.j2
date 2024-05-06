@@ -1,0 +1,40 @@
+{% macro join(data_source, joined_data_source) -%}
+    {% if joined_data_source.relationship == 'one_to_one' -%}
+        INNER JOIN
+    {% elif joined_data_source.relationship == 'many_to_one' -%}
+        RIGHT JOIN
+    {% elif joined_data_source.relationship == 'one_to_many' -%}
+        LEFT JOIN
+    {% elif joined_data_source.relationship is None or joined_data_source.relationship == 'many_to_many' -%}
+        JOIN
+    {% endif %}
+    (
+        {{ data_source_query(joined_data_source) }}
+    ) AS {{ joined_data_source.name }} ON 
+    {% if joined_data_source.on_expression -%}
+        {{ joined_data_source.on_expression }}
+    {% else -%}
+        {{ data_source.name }}.{{ data_source.client_id_column }} ==
+        {{ joined_data_source.name }}.{{ joined_data_source.client_id_column }} AND
+        {{ data_source.name }}.{{ data_source.submission_date_column }} ==
+        {{ joined_data_source.name }}.{{ joined_data_source.submission_date_column }}
+    {% endif -%}
+{%- endmacro -%}
+
+{% macro data_source_query(data_source) -%}
+(
+    SELECT
+        *
+    FROM
+        {{ data_source.from_expression }} AS {{ data_source.name }}
+    {% if data_source.joins -%}
+        {% for joined_data_source in data_source.joins -%}
+            {{ join(data_source, joined_data_source) }}
+        {% endfor -%}
+    {% endif -%}
+    {% if where -%}
+    WHERE
+        {{ where }}
+    {% endif -%}
+)
+{%- endmacro -%}
