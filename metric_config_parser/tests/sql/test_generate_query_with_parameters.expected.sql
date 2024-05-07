@@ -11,18 +11,22 @@ WITH clients_daily AS (
     FROM (
     SELECT
         *
-    FROM
-        mozdata.telemetry.clients_daily AS clients_daily
-    WHERE
-        submission_date = '2023-01-01' AND normalized_channel = 'release'
+    FROM (
+        SELECT
+            *
+        FROM
+            mozdata.telemetry.clients_daily
+        WHERE
+            submission_date = '2023-01-01' AND normalized_channel = 'release'
+        ) AS clients_daily
     )
-    GROUP BY    
+    GROUP BY
         build_id,
         sample_id,
         client_id,
         submission_date
         
-)
+    )
 SELECT
     clients_daily.client_id,
     clients_daily.submission_date,

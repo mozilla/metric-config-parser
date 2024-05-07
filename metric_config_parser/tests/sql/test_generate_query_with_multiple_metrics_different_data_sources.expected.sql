@@ -11,18 +11,22 @@ WITH clients_daily AS (
     FROM (
     SELECT
         *
-    FROM
-        mozdata.telemetry.clients_daily AS clients_daily
-    WHERE
-        submission_date = '2023-01-01' AND normalized_channel = 'release'
+    FROM (
+        SELECT
+            *
+        FROM
+            mozdata.telemetry.clients_daily
+        WHERE
+            submission_date = '2023-01-01' AND normalized_channel = 'release'
+        ) AS clients_daily
     )
-    GROUP BY    
+    GROUP BY
         build_id,
         sample_id,
         client_id,
         submission_date
         
-),
+    ),
  normandy_events AS (
     SELECT
         client_id AS client_id,
@@ -37,23 +41,27 @@ WITH clients_daily AS (
     FROM (
     SELECT
         *
-    FROM
-        (
+    FROM (
+        SELECT
+            *
+        FROM
+            (
     SELECT
         *
     FROM mozdata.telemetry.events
     WHERE event_category = 'normandy'
-) AS normandy_events
-    WHERE
-        submission_date = '2023-01-01' AND normalized_channel = 'release'
+)
+        WHERE
+            submission_date = '2023-01-01' AND normalized_channel = 'release'
+        ) AS normandy_events
     )
-    GROUP BY    
+    GROUP BY
         build_id,
         sample_id,
         client_id,
         submission_date
         
-),
+    ),
  events AS (
     SELECT
         client_id AS client_id,
@@ -67,18 +75,22 @@ WITH clients_daily AS (
     FROM (
     SELECT
         *
-    FROM
-        mozdata.telemetry.events AS events
-    WHERE
-        submission_date = '2023-01-01' AND normalized_channel = 'release'
+    FROM (
+        SELECT
+            *
+        FROM
+            mozdata.telemetry.events
+        WHERE
+            submission_date = '2023-01-01' AND normalized_channel = 'release'
+        ) AS events
     )
-    GROUP BY    
+    GROUP BY
         build_id,
         sample_id,
         client_id,
         submission_date
         
-)
+    )
 SELECT
     clients_daily.client_id,
     clients_daily.submission_date,

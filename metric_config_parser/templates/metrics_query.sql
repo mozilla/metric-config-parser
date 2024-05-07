@@ -17,7 +17,8 @@
         {{ metric.select_expression }} AS {{ metric.name }},
         {% endfor %}
     FROM {{ data_source_query(data_source_info["data_source"]) }}
-    GROUP BY    
+    {% if group_by != {} or group_by_submission_date or group_by_client_id -%}
+    GROUP BY
         {% for dimension, dimension_sql in group_by.items() -%}
         {{ dimension }}{{ "," if not loop.last or group_by_submission_date or group_by_client_id else "" }}
         {% endfor -%}
@@ -27,6 +28,7 @@
         {% if group_by_submission_date -%}
         submission_date
         {% endif %}
+    {% endif -%}
 ){{ "," if not loop.last else "" }}
 {% endfor -%}
 

@@ -87,6 +87,12 @@ def generate_metrics_sql(
                 "group_by": group_by,
                 "group_by_client_id": group_by_client_id,
                 "group_by_submission_date": group_by_submission_date,
+                "data_sources": {
+                    slug: data_source
+                    for definition in config_collection.definitions
+                    for slug, data_source in definition.spec.data_sources.definitions.items()
+                    if platform == definition.platform
+                },
             }
         )
     )
@@ -121,6 +127,12 @@ def generate_data_source_sql(
         .render(
             **{
                 "data_source": data_source_definition,
+                "data_sources": {
+                    slug: data_source
+                    for definition in config_collection.definitions
+                    for slug, data_source in definition.spec.data_sources.definitions.items()
+                    if platform == definition.platform
+                },
                 "where": where,
             }
         )

@@ -9,14 +9,18 @@ WITH clients_daily AS (
     FROM (
     SELECT
         *
-    FROM
-        mozdata.telemetry.clients_daily AS clients_daily
+    FROM (
+        SELECT
+            *
+        FROM
+            mozdata.telemetry.clients_daily
+        ) AS clients_daily
     )
-    GROUP BY    
+    GROUP BY
         client_id,
         submission_date
         
-)
+    )
 SELECT
     clients_daily.client_id,
     clients_daily.submission_date,
