@@ -157,6 +157,7 @@ class DataSourceDefinition:
     friendly_name: Optional[str] = None
     description: Optional[str] = None
     joins: Optional[Dict[str, Dict[str, Any]]] = None
+    columns_as_dimensions: Optional[bool] = None
 
     def resolve(
         self,
@@ -174,6 +175,7 @@ class DataSourceDefinition:
             "build_id_column",
             "friendly_name",
             "description",
+            "columns_as_dimensions",
         ):
             v = getattr(self, k)
             if v:
