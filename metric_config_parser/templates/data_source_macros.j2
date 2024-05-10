@@ -1,12 +1,10 @@
 {% macro join(data_source, joined_data_source_slug, joined_data_source) -%}
-    {% if 'relationship' not in joined_data_source or joined_data_source.relationship == 'many_to_many' -%}
-        JOIN
-    {% elif joined_data_source.relationship == 'one_to_one' -%}
-        INNER JOIN
-    {% elif joined_data_source.relationship == 'many_to_one' -%}
+    {% if 'relationship' in joined_data_source and joined_data_source.relationship == 'many_to_one' -%}
         RIGHT JOIN
-    {% elif joined_data_source.relationship == 'one_to_many' -%}
+    {% elif 'relationship' in joined_data_source and joined_data_source.relationship == 'one_to_many' -%}
         LEFT JOIN
+    {% else -%}
+        INNER JOIN
     {% endif -%}
     (
         {{ data_source_query(data_sources[joined_data_source_slug]) }}
@@ -22,23 +20,28 @@
 {%- endmacro -%}
 
 {% macro data_source_query(data_source) -%}
+{% if select_fields -%}
 (
     SELECT
         *
-    FROM (
-        SELECT
-            *
-        FROM
-            {{ data_source.from_expression }}
-        {% if where -%}
-        WHERE
-            {{ where }}
+    FROM
+{% endif -%}
+        (
+            SELECT
+                *
+            FROM
+                {{ data_source.from_expression }}
+            {% if where -%}
+            WHERE
+                {{ where }}
+            {% endif -%}
+        ) AS {{ data_source.name }}
+        {% if data_source.joins and data_source.client_id_column != 'NULL' -%}
+            {% for joined_data_source_slug, joined_data_source in data_source.joins.items() -%}
+                {{ join(data_source, joined_data_source_slug, joined_data_source) }}
+            {% endfor -%}
         {% endif -%}
-    ) AS {{ data_source.name }}
-    {% if data_source.joins -%}
-        {% for joined_data_source_slug, joined_data_source in data_source.joins.items() -%}
-            {{ join(data_source, joined_data_source_slug, joined_data_source) }}
-        {% endfor -%}
-    {% endif -%}
+{% if select_fields -%}
 )
+{% endif -%}
 {%- endmacro -%}

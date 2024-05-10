@@ -8,13 +8,15 @@ WITH clients_daily AS (
     FROM (
     SELECT
         *
-    FROM (
-        SELECT
-            *
-        FROM
-            mozdata.telemetry.clients_daily
-        ) AS clients_daily
-    )
+    FROM
+(
+            SELECT
+                *
+            FROM
+                mozdata.telemetry.clients_daily
+            ) AS clients_daily
+        )
+
     GROUP BY
         client_id,
         submission_date

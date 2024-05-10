@@ -7,32 +7,36 @@ WITH joined_baseline AS (
     FROM (
     SELECT
         *
-    FROM (
-        SELECT
-            *
-        FROM
-            mozdata.telemetry.baseline
-        WHERE
-            submission_date = '2023-01-01' AND normalized_channel = 'release'
-        ) AS joined_baseline
-    JOIN
+    FROM
+(
+            SELECT
+                *
+            FROM
+                mozdata.telemetry.baseline
+            WHERE
+                submission_date = '2023-01-01' AND normalized_channel = 'release'
+            ) AS joined_baseline
+        INNER JOIN
     (
         (
     SELECT
         *
-    FROM (
-        SELECT
-            *
-        FROM
-            mozdata.telemetry.events
-        WHERE
-            submission_date = '2023-01-01' AND normalized_channel = 'release'
-        ) AS events
-    )
+    FROM
+(
+            SELECT
+                *
+            FROM
+                mozdata.telemetry.events
+            WHERE
+                submission_date = '2023-01-01' AND normalized_channel = 'release'
+            ) AS events
+        )
+
     ) ON 
     joined_baseline.client_id = events.client_id
     
-        )
+            )
+
     GROUP BY
         client_id
         

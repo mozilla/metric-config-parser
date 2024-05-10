@@ -679,10 +679,18 @@ class ConfigCollection:
         )
 
     def get_data_source_sql(
-        self, data_source: str, platform: str, where: Optional[str] = None
+        self,
+        data_source: str,
+        platform: str,
+        where: Optional[str] = None,
+        select_fields: bool = True,
     ) -> str:
         return generate_data_source_sql(
-            self, data_source=data_source, platform=platform, where=where
+            self,
+            data_source=data_source,
+            platform=platform,
+            where=where,
+            select_fields=select_fields,
         )
 
     def get_env(self) -> jinja2.Environment:

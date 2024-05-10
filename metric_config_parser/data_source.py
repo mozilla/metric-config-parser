@@ -29,6 +29,8 @@ class DataSourceJoinRelationship(Enum):
                 return DataSourceJoinRelationship.MANY_TO_ONE
             case "one_to_many":
                 return DataSourceJoinRelationship.ONE_TO_MANY
+            case "many_to_many":
+                return DataSourceJoinRelationship.MANY_TO_MANY
             case _:
                 raise NotImplementedError
 

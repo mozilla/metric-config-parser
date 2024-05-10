@@ -93,6 +93,7 @@ def generate_metrics_sql(
                     for slug, data_source in definition.spec.data_sources.definitions.items()
                     if platform == definition.platform
                 },
+                "select_fields": True,
             }
         )
     )
@@ -103,6 +104,7 @@ def generate_data_source_sql(
     data_source: str,
     platform: str,
     where: Optional[str] = None,
+    select_fields: bool = True,
 ) -> str:
     """Generates a SQL query for the specified data source."""
     template = DATA_SOURCE_QUERY.read_text()
@@ -134,6 +136,7 @@ def generate_data_source_sql(
                     if platform == definition.platform
                 },
                 "where": where,
+                "select_fields": select_fields,
             }
         )
     )
