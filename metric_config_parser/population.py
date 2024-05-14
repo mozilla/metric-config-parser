@@ -54,17 +54,21 @@ class PopulationSpec:
             boolean_pref=self.boolean_pref
             or (conf.population.boolean_pref if conf and not conf.is_rollout else None),
             channel=self.channel or (conf.population.channel if conf else None),
-            branches=self.branches
-            if self.branches is not None
-            else (
-                [branch for branch in conf.population.branches]
-                if conf and self.boolean_pref is None and not conf.is_rollout
-                else []
+            branches=(
+                self.branches
+                if self.branches is not None
+                else (
+                    [branch for branch in conf.population.branches]
+                    if conf and self.boolean_pref is None and not conf.is_rollout
+                    else []
+                )
             ),
             monitor_entire_population=self.monitor_entire_population,
-            group_by_dimension=self.group_by_dimension.resolve(spec, conf, configs)
-            if self.group_by_dimension
-            else None,
+            group_by_dimension=(
+                self.group_by_dimension.resolve(spec, conf, configs)
+                if self.group_by_dimension
+                else None
+            ),
         )
 
     def merge(self, other: "PopulationSpec") -> None:
