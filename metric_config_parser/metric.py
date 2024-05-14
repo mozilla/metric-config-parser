@@ -224,9 +224,9 @@ class MetricDefinition:
                     name=self.name,
                     data_source=None,
                     select_expression=None,
-                    friendly_name=dedent(self.friendly_name)
-                    if self.friendly_name
-                    else self.friendly_name,
+                    friendly_name=(
+                        dedent(self.friendly_name) if self.friendly_name else self.friendly_name
+                    ),
                     description=dedent(self.description) if self.description else self.description,
                     bigger_is_better=self.bigger_is_better,
                     analysis_bases=self.analysis_bases
@@ -256,9 +256,9 @@ class MetricDefinition:
                 name=self.name,
                 data_source=self.data_source.resolve(spec, conf, configs),
                 select_expression=select_expression,
-                friendly_name=dedent(self.friendly_name)
-                if self.friendly_name
-                else self.friendly_name,
+                friendly_name=(
+                    dedent(self.friendly_name) if self.friendly_name else self.friendly_name
+                ),
                 description=dedent(self.description) if self.description else self.description,
                 bigger_is_better=self.bigger_is_better,
                 analysis_bases=self.analysis_bases

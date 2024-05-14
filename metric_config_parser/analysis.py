@@ -162,9 +162,11 @@ class AnalysisSpec:
                 "friendly_name": getattr(param_1, "friendly_name", None)
                 or getattr(param_2, "friendly_name"),
                 "description": getattr(param_1, "description", None) or param_2.description,
-                "value": {branch: branch_value for branch, branch_value in final_value.items()}
-                if isinstance(final_value, dict)
-                else final_value,
+                "value": (
+                    {branch: branch_value for branch, branch_value in final_value.items()}
+                    if isinstance(final_value, dict)
+                    else final_value
+                ),
                 "default": getattr(param_1, "default", None)
                 or default_value
                 or (dict() if isinstance(final_value, dict) else None),
