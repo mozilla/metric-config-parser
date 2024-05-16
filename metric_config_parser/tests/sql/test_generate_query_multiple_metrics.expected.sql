@@ -6,13 +6,23 @@ WITH clients_daily AS (
         COALESCE(SUM(active_hours_sum), 0) AS active_hours,
         COUNT(submission_date) AS days_of_use,
         
+    FROM (
+    SELECT
+        *
     FROM
-        mozdata.telemetry.clients_daily
-    GROUP BY    
+(
+            SELECT
+                *
+            FROM
+                mozdata.telemetry.clients_daily
+            ) AS clients_daily
+        )
+
+    GROUP BY
         client_id,
         submission_date
         
-)
+    )
 SELECT
     clients_daily.client_id,
     clients_daily.submission_date,

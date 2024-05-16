@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import attr
 
@@ -11,6 +12,34 @@ if TYPE_CHECKING:
     from .project import ProjectConfiguration
 
 from .util import converter
+
+
+class DataSourceJoinRelationship(Enum):
+    ONE_TO_ONE = "one_to_one"
+    MANY_TO_ONE = "many_to_one"
+    ONE_TO_MANY = "one_to_many"
+    MANY_TO_MANY = "many_to_many"
+
+    @staticmethod
+    def from_str(label):
+        match label:
+            case "one_to_one":
+                return DataSourceJoinRelationship.ONE_TO_ONE
+            case "many_to_one":
+                return DataSourceJoinRelationship.MANY_TO_ONE
+            case "one_to_many":
+                return DataSourceJoinRelationship.ONE_TO_MANY
+            case "many_to_many":
+                return DataSourceJoinRelationship.MANY_TO_MANY
+            case _:
+                raise NotImplementedError
+
+
+@attr.s(auto_attribs=True)
+class DataSourceJoin:
+    data_source: "DataSource"
+    relationship: Optional[DataSourceJoinRelationship]
+    on_expression: Optional[str]
 
 
 @attr.s(frozen=True, slots=True)
@@ -57,6 +86,8 @@ class DataSource:
     build_id_column = attr.ib(default="SAFE.SUBSTR(application.build_id, 0, 8)", type=str)
     friendly_name = attr.ib(default=None, type=str)
     description = attr.ib(default=None, type=str)
+    joins = attr.ib(default=None, type=List[DataSourceJoin])
+    columns_as_dimensions = attr.ib(default=False, type=bool)
 
     EXPERIMENT_COLUMN_TYPES = (None, "simple", "native", "glean")
 
@@ -101,12 +132,12 @@ class DataSourceReference:
         configs: "ConfigCollection",
     ) -> DataSource:
         if self.name in spec.data_sources.definitions:
-            return spec.data_sources.definitions[self.name].resolve(spec)
+            return spec.data_sources.definitions[self.name].resolve(spec, conf, configs)
 
         data_source_definition = configs.get_data_source_definition(self.name, conf.app_name)
         if data_source_definition is None:
             raise DefinitionNotFound(f"No default definition for data source '{self.name}' found")
-        return data_source_definition.resolve(spec)
+        return data_source_definition.resolve(spec, conf, configs)
 
 
 converter.register_structure_hook(
@@ -127,8 +158,15 @@ class DataSourceDefinition:
     build_id_column: Optional[str] = None
     friendly_name: Optional[str] = None
     description: Optional[str] = None
+    joins: Optional[Dict[str, Dict[str, Any]]] = None
+    columns_as_dimensions: Optional[bool] = None
 
-    def resolve(self, spec: "DefinitionSpecSub") -> DataSource:
+    def resolve(
+        self,
+        spec: "DefinitionSpecSub",
+        conf: Union["ExperimentConfiguration", "ProjectConfiguration"],
+        configs: "ConfigCollection",
+    ) -> DataSource:
         params: Dict[str, Any] = {"name": self.name, "from_expression": self.from_expression}
         # Allow mozanalysis to infer defaults for these values:
         for k in (
@@ -139,6 +177,7 @@ class DataSourceDefinition:
             "build_id_column",
             "friendly_name",
             "description",
+            "columns_as_dimensions",
         ):
             v = getattr(self, k)
             if v:
@@ -151,6 +190,22 @@ class DataSourceDefinition:
         # transform it to the value None.
         if (self.experiments_column_type or "").lower() == "none":
             params["experiments_column_type"] = None
+
+        # resolve the data source joins
+        if self.joins and len(self.joins) > 0:
+            params["joins"] = [
+                DataSourceJoin(
+                    data_source=DataSourceReference(name=data_source).resolve(spec, conf, configs),
+                    relationship=(
+                        DataSourceJoinRelationship.from_str(join["relationship"])
+                        if "relationship" in join
+                        else None
+                    ),
+                    on_expression=join.get("on_expression", None),
+                )
+                for data_source, join in self.joins.items()
+            ]
+
         return DataSource(**params)
 
     def merge(self, other: "DataSourceDefinition"):
