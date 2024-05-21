@@ -1,4 +1,6 @@
 import copy
+import fnmatch
+import re
 from collections import defaultdict
 from enum import Enum
 from textwrap import dedent
@@ -21,7 +23,7 @@ from .data_source import DataSource, DataSourceReference
 from .parameter import ParameterDefinition
 from .pre_treatment import PreTreatmentReference
 from .statistic import Statistic
-from .util import converter
+from .util import converter, is_valid_slug
 
 
 class AnalysisPeriod(Enum):
@@ -407,13 +409,17 @@ class MetricsSpec:
         self.preenrollment_weekly = other.preenrollment_weekly + self.preenrollment_weekly
         self.preenrollment_days28 = other.preenrollment_days28 + self.preenrollment_days28
 
-        seen = []
+        seen = set()
         for key, _ in self.definitions.items():
-            if key in other.definitions:
-                self.definitions[key].merge(other.definitions[key])
-            seen.append(key)
+            for other_key in other.definitions:
+                # support wildcard characters in `other`
+                other_key_regex = re.compile(fnmatch.translate(other_key))
+                if other_key_regex.fullmatch(key):
+                    self.definitions[key].merge(other.definitions[other_key])
+                    seen.add(other_key)
+            seen.add(key)
         for key, definition in other.definitions.items():
-            if key not in seen:
+            if key not in seen and is_valid_slug(key):
                 self.definitions[key] = definition
 
 
