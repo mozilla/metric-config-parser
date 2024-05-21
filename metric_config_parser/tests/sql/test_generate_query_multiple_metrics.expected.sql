@@ -21,8 +21,7 @@ WITH clients_daily AS (
     GROUP BY
         client_id,
         submission_date
-        
-    )
+        )
 SELECT
     clients_daily.client_id,
     clients_daily.submission_date,

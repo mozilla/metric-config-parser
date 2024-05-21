@@ -1,8 +1,4 @@
 (
-SELECT
-    *
-FROM
-    (
     SELECT
         *
     FROM
@@ -14,9 +10,8 @@ FROM
             WHERE
                 submission_date = '2023-01-01'
             ) AS joined_baseline
-        INNER JOIN
+        JOIN
     (
-        (
     SELECT
         *
     FROM
@@ -30,9 +25,7 @@ FROM
             ) AS events
         )
 
-    ) ON 
+    ON 
     joined_baseline.client_id = events.client_id
     
             )
-
-)

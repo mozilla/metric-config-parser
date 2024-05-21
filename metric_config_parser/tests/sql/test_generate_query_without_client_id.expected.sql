@@ -20,8 +20,7 @@ WITH clients_daily AS (
 
     GROUP BY
         build_id
-        
-    )
+        )
 SELECT
     clients_daily.build_id AS build_id,
     active_hours,

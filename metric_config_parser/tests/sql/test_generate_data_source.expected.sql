@@ -1,8 +1,4 @@
 (
-SELECT
-    *
-FROM
-    (
     SELECT
         *
     FROM
@@ -15,5 +11,3 @@ FROM
                 submission_date = '2023-01-01'
             ) AS main
         )
-
-)
