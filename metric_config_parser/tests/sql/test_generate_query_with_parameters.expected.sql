@@ -27,8 +27,7 @@ WITH clients_daily AS (
         sample_id,
         client_id,
         submission_date
-        
-    )
+        )
 SELECT
     clients_daily.client_id,
     clients_daily.submission_date,

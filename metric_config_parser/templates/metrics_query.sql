@@ -27,7 +27,7 @@
         {% endif -%}
         {% if group_by_submission_date -%}
         submission_date
-        {% endif %}
+        {% endif -%}
     {% endif -%}
 ){{ "," if not loop.last else "" }}
 {% endfor -%}

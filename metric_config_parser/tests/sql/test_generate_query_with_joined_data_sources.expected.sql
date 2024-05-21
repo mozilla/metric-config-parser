@@ -16,9 +16,8 @@ WITH joined_baseline AS (
             WHERE
                 submission_date = '2023-01-01' AND normalized_channel = 'release'
             ) AS joined_baseline
-        INNER JOIN
+        JOIN
     (
-        (
     SELECT
         *
     FROM
@@ -32,15 +31,14 @@ WITH joined_baseline AS (
             ) AS events
         )
 
-    ) ON 
+    ON 
     joined_baseline.client_id = events.client_id
     
             )
 
     GROUP BY
         client_id
-        
-    )
+        )
 SELECT
     joined_baseline.client_id,
     joined_metric,
