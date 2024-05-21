@@ -609,6 +609,7 @@ class TestConfigIntegration:
             )
 
     def test_invalid_wildcard_in_data_source(self):
+        # needs to be [data_sources.'baseline_*']
         config_str = dedent(
             """
             [data_sources.baseline_*]
