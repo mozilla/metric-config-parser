@@ -42,6 +42,7 @@ setup(
     ],
     package_data={
         "metric_config_parser.tests": ["data/*"],
+        "metric_config_parser": ["templates/*"],
     },
     install_requires=[
         "attrs",
@@ -52,6 +53,7 @@ setup(
         "pytz",
         "requests",
         "toml",
+        "mozilla-nimbus-schemas",
     ],
     include_package_data=True,
     tests_require=test_dependencies,
@@ -63,5 +65,5 @@ setup(
         [console_scripts]
         metric-config-parser=metric_config_parser.cli:cli
     """,
-    version="2022.11.2",
+    version="2024.5.2",
 )

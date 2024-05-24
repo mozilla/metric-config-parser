@@ -36,6 +36,15 @@ class Branch:
 
 
 @attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
+class BucketConfig:
+    randomization_unit: str
+    namespace: str
+    start: int
+    count: int
+    total: int = 10000
+
+
+@attr.s(auto_attribs=True, kw_only=True, slots=True, frozen=True)
 class Experiment:
     """
     Common experiment representation.
@@ -53,6 +62,8 @@ class Experiment:
         reference_branch: V1 experiment branch slug where is_control is True;
             V6 experiment reference_branch
         enrollment_end_date: experiment enrollment_end_date
+        is_enrollment_paused: True if enrollment has ended;
+            needed because enrollment_end_date may be computed/proposed
     """
 
     experimenter_slug: Optional[str]
@@ -66,6 +77,8 @@ class Experiment:
     reference_branch: Optional[str]
     is_high_population: bool
     app_name: str
+    bucket_config: Optional[BucketConfig] = None
+    is_enrollment_paused: Optional[bool] = None
     app_id: Optional[str] = None
     outcomes: List[str] = attr.Factory(list)
     enrollment_end_date: Optional[dt.datetime] = None
@@ -82,6 +95,8 @@ class ExperimentConfiguration:
     experiment: "Experiment"
     segments: List[Segment]
     exposure_signal: Optional[ExposureSignal] = None
+    # int <= 100 represents the percentage of clients for downsampling enrollments
+    sample_size: Optional[int] = None
 
     def __attrs_post_init__(self):
         # Catch any exceptions at instantiation
@@ -116,6 +131,24 @@ class ExperimentConfiguration:
     @property
     def enrollment_end_date(self) -> Optional[dt.datetime]:
         return self.experiment.enrollment_end_date
+
+    @property
+    def is_enrollment_paused(self) -> Optional[bool]:
+        return self.experiment.is_enrollment_paused
+
+    @property
+    def bucket_count(self) -> Optional[int]:
+        if hasattr(self.experiment, "bucket_config") and self.experiment.bucket_config is not None:
+            return self.experiment.bucket_config.count
+
+        return None
+
+    @property
+    def bucket_start(self) -> Optional[int]:
+        if hasattr(self.experiment, "bucket_config") and self.experiment.bucket_config is not None:
+            return self.experiment.bucket_config.start
+
+        return None
 
     @property
     def enrollment_period(self) -> int:
@@ -228,6 +261,7 @@ class ExperimentSpec:
     exposure_signal: Optional[ExposureSignalDefinition] = None
     is_private: bool = False
     dataset_id: Optional[str] = attr.ib(default=None, validator=_validate_dataset_id)
+    sample_size: Optional[int] = None
 
     def resolve(
         self, spec: "AnalysisSpec", experiment: "Experiment", configs: "ConfigCollection"
@@ -238,6 +272,8 @@ class ExperimentSpec:
         experiment_config.segments = [
             ref.resolve(spec, experiment_config, configs) for ref in self.segments
         ]
+
+        experiment_config.sample_size = self.sample_size
 
         if self.exposure_signal:
             experiment_config.exposure_signal = self.exposure_signal.resolve(

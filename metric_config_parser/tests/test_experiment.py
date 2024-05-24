@@ -13,7 +13,7 @@ from metric_config_parser.metric import AnalysisPeriod
 from metric_config_parser.segment import Segment
 
 TEST_DIR = Path(__file__).parent
-DEFAULT_METRICS_CONFIG = TEST_DIR / "data" / "default_metrics.toml"
+DEFAULT_METRICS_CONFIG = TEST_DIR / "data" / "jetstream" / "defaults" / "firefox_desktop.toml"
 
 
 class TestExperimentSpec:
@@ -233,6 +233,37 @@ class TestExperimentSpec:
         assert len(overall_pre_treatments) == 1
         assert overall_pre_treatments[0].name == "remove_nulls"
 
+    def test_preenrollment(self, experiments, config_collection):
+        config_str = dedent(
+            """
+            [metrics]
+            preenrollment_days28 = ["spam"]
+            preenrollment_weekly = ["spam"]
+
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
+
+            [metrics.spam.statistics.binomial]
+            """
+        )
+
+        spec = AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[0], config_collection)
+        week_metrics = [
+            m for m in cfg.metrics[AnalysisPeriod.PREENROLLMENT_WEEK] if m.metric.name == "spam"
+        ]
+
+        assert len(week_metrics) == 1
+        assert week_metrics[0].metric.name == "spam"
+
+        days28_metrics = [
+            m for m in cfg.metrics[AnalysisPeriod.PREENROLLMENT_DAYS_28] if m.metric.name == "spam"
+        ]
+
+        assert len(days28_metrics) == 1
+        assert days28_metrics[0].metric.name == "spam"
+
 
 class TestExperimentConf:
     def test_bad_dates(self, experiments):
@@ -322,6 +353,28 @@ class TestExperimentConf:
         spec = AnalysisSpec.from_dict(toml.loads(conf))
         cfg = spec.resolve(experiments[7], config_collection)
         assert cfg.experiment.dataset_id == "test"
+
+    def test_sample_size_defined_experiment(self, experiments, config_collection):
+        conf = dedent(
+            """
+            [experiment]
+            sample_size = 8
+            """
+        )
+        spec = AnalysisSpec.from_dict(toml.loads(conf))
+        cfg = spec.resolve(experiments[7], config_collection)
+        assert cfg.experiment.sample_size == 8
+
+    def test_sample_size_none_experiment(self, experiments, config_collection):
+        conf = dedent(
+            """
+            [experiment]
+            enrollment_period = 7
+            """
+        )
+        spec = AnalysisSpec.from_dict(toml.loads(conf))
+        cfg = spec.resolve(experiments[7], config_collection)
+        assert cfg.experiment.sample_size is None
 
 
 class TestDefaultConfiguration:

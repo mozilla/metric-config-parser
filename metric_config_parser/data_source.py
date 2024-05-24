@@ -1,4 +1,7 @@
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+import fnmatch
+import re
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import attr
 
@@ -10,7 +13,35 @@ if TYPE_CHECKING:
     from .definition import DefinitionSpecSub
     from .project import ProjectConfiguration
 
-from .util import converter
+from .util import converter, is_valid_slug
+
+
+class DataSourceJoinRelationship(Enum):
+    ONE_TO_ONE = "one_to_one"
+    MANY_TO_ONE = "many_to_one"
+    ONE_TO_MANY = "one_to_many"
+    MANY_TO_MANY = "many_to_many"
+
+    @staticmethod
+    def from_str(label):
+        match label:
+            case "one_to_one":
+                return DataSourceJoinRelationship.ONE_TO_ONE
+            case "many_to_one":
+                return DataSourceJoinRelationship.MANY_TO_ONE
+            case "one_to_many":
+                return DataSourceJoinRelationship.ONE_TO_MANY
+            case "many_to_many":
+                return DataSourceJoinRelationship.MANY_TO_MANY
+            case _:
+                raise NotImplementedError
+
+
+@attr.s(auto_attribs=True)
+class DataSourceJoin:
+    data_source: "DataSource"
+    relationship: Optional[DataSourceJoinRelationship]
+    on_expression: Optional[str]
 
 
 @attr.s(frozen=True, slots=True)
@@ -57,6 +88,8 @@ class DataSource:
     build_id_column = attr.ib(default="SAFE.SUBSTR(application.build_id, 0, 8)", type=str)
     friendly_name = attr.ib(default=None, type=str)
     description = attr.ib(default=None, type=str)
+    joins = attr.ib(default=None, type=List[DataSourceJoin])
+    columns_as_dimensions = attr.ib(default=False, type=bool)
 
     EXPERIMENT_COLUMN_TYPES = (None, "simple", "native", "glean")
 
@@ -101,12 +134,12 @@ class DataSourceReference:
         configs: "ConfigCollection",
     ) -> DataSource:
         if self.name in spec.data_sources.definitions:
-            return spec.data_sources.definitions[self.name].resolve(spec)
+            return spec.data_sources.definitions[self.name].resolve(spec, conf, configs)
 
         data_source_definition = configs.get_data_source_definition(self.name, conf.app_name)
         if data_source_definition is None:
             raise DefinitionNotFound(f"No default definition for data source '{self.name}' found")
-        return data_source_definition.resolve(spec)
+        return data_source_definition.resolve(spec, conf, configs)
 
 
 converter.register_structure_hook(
@@ -127,8 +160,25 @@ class DataSourceDefinition:
     build_id_column: Optional[str] = None
     friendly_name: Optional[str] = None
     description: Optional[str] = None
+    joins: Optional[Dict[str, Dict[str, Any]]] = None
+    columns_as_dimensions: Optional[bool] = None
 
-    def resolve(self, spec: "DefinitionSpecSub") -> DataSource:
+    def resolve(
+        self,
+        spec: "DefinitionSpecSub",
+        conf: Union["ExperimentConfiguration", "ProjectConfiguration"],
+        configs: "ConfigCollection",
+    ) -> DataSource:
+        if not is_valid_slug(self.name):
+            # a data source name cannot include a wildcard * because if
+            # it does at this point in the code,
+            # that means it isn't defined anywhere and there's some dangling wildcard
+            raise ValueError(
+                f"Invalid identifier found in name {self.name}. "
+                + "Name must at least consist of one character, number or underscore. "
+                + "Wildcard characters are only allowed if matching slug is defined."
+            )
+
         params: Dict[str, Any] = {"name": self.name, "from_expression": self.from_expression}
         # Allow mozanalysis to infer defaults for these values:
         for k in (
@@ -139,6 +189,7 @@ class DataSourceDefinition:
             "build_id_column",
             "friendly_name",
             "description",
+            "columns_as_dimensions",
         ):
             v = getattr(self, k)
             if v:
@@ -151,12 +202,29 @@ class DataSourceDefinition:
         # transform it to the value None.
         if (self.experiments_column_type or "").lower() == "none":
             params["experiments_column_type"] = None
+
+        # resolve the data source joins
+        if self.joins and len(self.joins) > 0:
+            params["joins"] = [
+                DataSourceJoin(
+                    data_source=DataSourceReference(name=data_source).resolve(spec, conf, configs),
+                    relationship=(
+                        DataSourceJoinRelationship.from_str(join["relationship"])
+                        if "relationship" in join
+                        else None
+                    ),
+                    on_expression=join.get("on_expression", None),
+                )
+                for data_source, join in self.joins.items()
+            ]
+
         return DataSource(**params)
 
     def merge(self, other: "DataSourceDefinition"):
         """Merge with another data source definition."""
         for key in attr.fields_dict(type(self)):
-            setattr(self, key, getattr(other, key) or getattr(self, key))
+            if key != "name":
+                setattr(self, key, getattr(other, key) or getattr(self, key))
 
 
 @attr.s(auto_attribs=True)
@@ -183,13 +251,17 @@ class DataSourcesSpec:
         Merge another datasource spec into the current one.
         The `other` DataSourcesSpec overwrites existing keys.
         """
-        seen = []
+        seen = set()
         for key, _ in self.definitions.items():
-            if key in other.definitions:
-                self.definitions[key].merge(other.definitions[key])
-            seen.append(key)
+            for other_key in other.definitions:
+                # support wildcard characters in `other`
+                other_key_regex = re.compile(fnmatch.translate(other_key))
+                if other_key_regex.fullmatch(key):
+                    self.definitions[key].merge(other.definitions[other_key])
+                    seen.add(other_key)
+            seen.add(key)
         for key, definition in other.definitions.items():
-            if key not in seen:
+            if key not in seen and is_valid_slug(key):
                 self.definitions[key] = definition
 
 

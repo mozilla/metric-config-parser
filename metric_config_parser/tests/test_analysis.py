@@ -4,16 +4,17 @@ from textwrap import dedent
 import pytest
 import toml
 from cattrs.errors import ClassValidationError
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 from metric_config_parser.analysis import AnalysisConfiguration, AnalysisSpec
 from metric_config_parser.data_source import DataSource
 from metric_config_parser.errors import InvalidConfigurationException
 from metric_config_parser.exposure_signal import AnalysisWindow, ExposureSignal
-from metric_config_parser.metric import AnalysisBasis, AnalysisPeriod
+from metric_config_parser.metric import AnalysisPeriod, DefinitionNotFound
 from metric_config_parser.parameter import ParameterDefinition, ParameterSpec
 
 TEST_DIR = Path(__file__).parent
-DEFAULT_METRICS_CONFIG = TEST_DIR / "data" / "default_metrics.toml"
+DEFAULT_METRICS_CONFIG = TEST_DIR / "data" / "jetstream" / "defaults" / "firefox_desktop.toml"
 
 
 class TestAnalysisSpec:
@@ -279,6 +280,34 @@ class TestAnalysisSpec:
         assert len([m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"]) == 1
         assert len([m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "foo"]) == 1
 
+    def test_resolve_config_override_outcome_metric(self, experiments, config_collection):
+        custom_conf = dedent(
+            """
+            [metrics]
+            weekly = ["meals_eaten"]
+
+            [metrics.meals_eaten]
+            data_source = "main"
+            select_expression = "2"
+            """
+        )
+
+        spec = AnalysisSpec.from_dict(toml.loads(custom_conf))
+        cfg = spec.resolve(experiments[5], config_collection)
+
+        meals_eaten = [
+            m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "meals_eaten"
+        ][0]
+
+        assert len(cfg.metrics[AnalysisPeriod.WEEK]) == 2
+        assert meals_eaten.metric.name == "meals_eaten"
+        assert meals_eaten.metric.data_source.name == "main"
+        assert meals_eaten.metric.select_expression == "2"
+        assert meals_eaten.metric.friendly_name == "Meals eaten"
+        assert meals_eaten.metric.description == "Number of consumed meals"
+        assert meals_eaten.statistic.name == "bootstrap_mean"
+        assert meals_eaten.statistic.params["num_samples"] == 10
+
     def test_merge_configs_override_metric(self, experiments, config_collection):
         orig_conf = dedent(
             """
@@ -317,7 +346,7 @@ class TestAnalysisSpec:
         assert len(cfg.metrics[AnalysisPeriod.WEEK]) == 1
         assert spam.metric.data_source.name == "main"
         assert spam.metric.select_expression == "2"
-        assert spam.metric.analysis_bases == [AnalysisBasis.ENROLLMENTS]
+        assert spam.metric.analysis_bases == [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]
         assert spam.statistic.name == "bootstrap_mean"
         assert spam.statistic.params["num_samples"] == 100
 
@@ -341,6 +370,7 @@ class TestAnalysisSpec:
         metric = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam"][0].metric
 
         assert AnalysisBasis.EXPOSURES in metric.analysis_bases
+        assert AnalysisBasis.ENROLLMENTS not in metric.analysis_bases
 
     def test_exposure_and_enrollments_based_metric(self, experiments, config_collection):
         config_str = dedent(
@@ -413,7 +443,7 @@ class TestAnalysisSpec:
 
         assert cfg.experiment.exposure_signal == ExposureSignal(
             name="ad_exposure",
-            data_source=DataSource(name="main", from_expression="SELECT 1"),
+            data_source=DataSource(name="main", from_expression="(SELECT 1)"),
             select_expression="ad_click > 0",
             friendly_name="Ad exposure",
             description="Clients have clicked on ad",
@@ -567,3 +597,169 @@ class TestAnalysisSpec:
 
         with pytest.raises(InvalidConfigurationException):
             AnalysisSpec._merge_param(param_definition_1, param_definition_2)
+
+    def test_depends_on_metric(self, experiments, config_collection):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["spam", "ham", "spam_ham"]
+
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
+
+            [metrics.spam.statistics.bootstrap_mean]
+
+            [metrics.ham]
+            data_source = "main"
+            select_expression = "2"
+
+            [metrics.ham.statistics.bootstrap_mean]
+
+            [metrics.spam_ham]
+            depends_on = ["spam", "ham"]
+
+            [metrics.spam_ham.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[0], config_collection)
+
+        assert len(cfg.metrics[AnalysisPeriod.WEEK]) == 3
+
+        metric = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "spam_ham"][
+            0
+        ].metric
+        assert metric.select_expression is None
+        assert metric.data_source is None
+        assert len(metric.depends_on) == 2
+
+        upstream_metrics = [m.metric.name for m in metric.depends_on]
+        assert "spam" in upstream_metrics
+        assert "ham" in upstream_metrics
+
+    def test_depends_on_definition(self, experiments, config_collection):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["active_hours", "view_about_logins", "combined_metric"]
+
+            [metrics.combined_metric]
+            depends_on = ["active_hours", "view_about_logins"]
+
+            [metrics.combined_metric.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[0], config_collection)
+
+        assert len(cfg.metrics[AnalysisPeriod.WEEK]) == 3
+
+        metric = [
+            m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "combined_metric"
+        ][0].metric
+        assert metric.select_expression is None
+        assert metric.data_source is None
+        assert len(metric.depends_on) == 2
+
+        upstream_metrics = [m.metric.name for m in metric.depends_on]
+        assert "active_hours" in upstream_metrics
+        assert "view_about_logins" in upstream_metrics
+
+    def test_non_existing_depends_on(self, experiments, config_collection):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["combined_metric"]
+
+            [metrics.combined_metric]
+            depends_on = ["non_existing"]
+
+            [metrics.combined_metric.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = AnalysisSpec.from_dict(toml.loads(config_str))
+
+        with pytest.raises(DefinitionNotFound):
+            spec.resolve(experiments[0], config_collection)
+
+    def test_empty_metric_definition_not_allowed(self, experiments, config_collection):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["empty_metric"]
+
+            [metrics.empty_metric]
+
+            [metrics.empty_metric.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = AnalysisSpec.from_dict(toml.loads(config_str))
+
+        with pytest.raises(DefinitionNotFound):
+            spec.resolve(experiments[0], config_collection)
+
+    def test_circular_depends_on(self, experiments, config_collection):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["spam", "ham"]
+
+            [metrics.spam]
+            depends_on = ["ham"]
+
+            [metrics.spam.statistics.bootstrap_mean]
+
+            [metrics.ham]
+            depends_on = ["spam"]
+
+            [metrics.ham.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = AnalysisSpec.from_dict(toml.loads(config_str))
+
+        with pytest.raises(RecursionError):
+            spec.resolve(experiments[0], config_collection)
+
+    def test_multiple_nesting(self, experiments, config_collection):
+        config_str = dedent(
+            """
+            [metrics]
+            weekly = ["spam", "ham", "wham"]
+
+            [metrics.spam]
+            data_source = "main"
+            select_expression = "1"
+
+            [metrics.spam.statistics.bootstrap_mean]
+
+            [metrics.ham]
+            depends_on = ["spam"]
+
+            [metrics.ham.statistics.bootstrap_mean]
+
+            [metrics.wham]
+            depends_on = ["ham"]
+
+            [metrics.wham.statistics.bootstrap_mean]
+            """
+        )
+
+        spec = AnalysisSpec.from_dict(toml.loads(config_str))
+        cfg = spec.resolve(experiments[0], config_collection)
+
+        assert len(cfg.metrics[AnalysisPeriod.WEEK]) == 3
+
+        metric = [m for m in cfg.metrics[AnalysisPeriod.WEEK] if m.metric.name == "wham"][0].metric
+        assert metric.select_expression is None
+        assert metric.data_source is None
+        assert len(metric.depends_on) == 1
+        assert metric.depends_on[0].metric.name == "ham"
+        assert len(metric.depends_on[0].metric.depends_on) == 1
+        assert metric.depends_on[0].metric.depends_on[0].metric.name == "spam"
+        assert metric.depends_on[0].metric.depends_on[0].metric.select_expression == "1"

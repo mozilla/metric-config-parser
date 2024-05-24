@@ -1,4 +1,6 @@
 import copy
+import fnmatch
+import re
 from collections import defaultdict
 from enum import Enum
 from textwrap import dedent
@@ -6,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import attr
 import jinja2
+from mozilla_nimbus_schemas.jetstream import AnalysisBasis
 
 from metric_config_parser.errors import DefinitionNotFound
 
@@ -20,14 +23,7 @@ from .data_source import DataSource, DataSourceReference
 from .parameter import ParameterDefinition
 from .pre_treatment import PreTreatmentReference
 from .statistic import Statistic
-from .util import converter
-
-
-class AnalysisBasis(Enum):
-    """Determines what the population used for the analysis will be based on."""
-
-    ENROLLMENTS = "enrollments"
-    EXPOSURES = "exposures"
+from .util import converter, is_valid_slug
 
 
 class AnalysisPeriod(Enum):
@@ -35,16 +31,38 @@ class AnalysisPeriod(Enum):
     WEEK = "week"
     DAYS_28 = "days28"
     OVERALL = "overall"
+    PREENROLLMENT_WEEK = "preenrollment_week"
+    PREENROLLMENT_DAYS_28 = "preenrollment_days28"
 
     @property
     def mozanalysis_label(self) -> str:
-        d = {"day": "daily", "week": "weekly", "days28": "28_day", "overall": "overall"}
+        d = {
+            "day": "daily",
+            "week": "weekly",
+            "days28": "28_day",
+            "overall": "overall",
+            "preenrollment_week": "preenrollment_weekly",
+            "preenrollment_days28": "preenrollment_days28",
+        }
         return d[self.value]
 
     @property
     def table_suffix(self) -> str:
-        d = {"day": "daily", "week": "weekly", "days28": "days28", "overall": "overall"}
+        d = {
+            "day": "daily",
+            "week": "weekly",
+            "days28": "days28",
+            "overall": "overall",
+            "preenrollment_week": "preenrollment_weekly",
+            "preenrollment_days28": "preenrollment_days28",
+        }
         return d[self.value]
+
+
+class MetricLevel(Enum):
+    GOLD = "gold"
+    SILVER = "silver"
+    BRONZE = "bronze"
 
 
 @attr.s(auto_attribs=True)
@@ -66,14 +84,18 @@ class Metric:
     """
 
     name: str
-    data_source: DataSource
-    select_expression: str
+    data_source: Optional[DataSource]
+    select_expression: Optional[str]
     friendly_name: Optional[str] = None
     description: Optional[str] = None
     bigger_is_better: bool = True
-    analysis_bases: List[AnalysisBasis] = [AnalysisBasis.ENROLLMENTS]
+    analysis_bases: List[AnalysisBasis] = [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES]
     type: str = "scalar"
     category: Optional[str] = None
+    depends_on: Optional[List[Summary]] = None
+    owner: Optional[List[str]] = None
+    deprecated: bool = False
+    level: Optional[MetricLevel] = None
 
 
 @attr.s(auto_attribs=True)
@@ -99,6 +121,8 @@ class MetricReference:
 # These are bare strings in the configuration file.
 converter.register_structure_hook(MetricReference, lambda obj, _type: MetricReference(name=obj))
 
+converter.register_structure_hook(Union[str, List[str], None], lambda obj, _type: obj)
+
 
 @attr.s(auto_attribs=True)
 class MetricDefinition:
@@ -119,6 +143,10 @@ class MetricDefinition:
     analysis_bases: Optional[List[AnalysisBasis]] = None
     type: Optional[str] = None
     category: Optional[str] = None
+    depends_on: Optional[List[MetricReference]] = None
+    owner: Optional[Union[str, List[str]]] = None
+    deprecated: bool = False
+    level: Optional[MetricLevel] = None
 
     @staticmethod
     def generate_select_expression(
@@ -164,19 +192,61 @@ class MetricDefinition:
     ) -> List[Summary]:
         metric_summary = None
         metric = None
+        upstream_metrics = None
+
+        # check if metric depends on other metrics
+        if self.depends_on:
+            upstream_metrics = []
+            # resolve upstream metrics
+            for metric_ref in self.depends_on:
+                # check if upstream metric is defined externally as a "definition"
+                upstream_metric = configs.get_metric_definition(metric_ref.name, conf.app_name)
+
+                if upstream_metric is None:
+                    # check if upstream metric is part of the analysis spec
+                    upstream_metric = spec.metrics.definitions.get(metric_ref.name, None)
+
+                if upstream_metric is None:
+                    raise DefinitionNotFound(
+                        f"No definition found for referenced upstream metric {metric_ref}"
+                    )
+
+                upstream_metrics += upstream_metric.resolve(spec, conf, configs)
 
         if self.select_expression is None or self.data_source is None:
             # checks if a metric from mozanalysis was referenced
             metric_definition = configs.get_metric_definition(self.name, conf.app_name)
 
-            if metric_definition is None:
+            if metric_definition is None and upstream_metrics is None:
                 raise DefinitionNotFound(
                     f"No default definition found for referenced metric {self.name}"
                 )
-
-            metric_definition.analysis_bases = self.analysis_bases or [AnalysisBasis.ENROLLMENTS]
-            metric_definition.statistics = self.statistics
-            metric_summary = metric_definition.resolve(spec, conf, configs)
+            elif upstream_metrics:
+                metric = Metric(
+                    name=self.name,
+                    data_source=None,
+                    select_expression=None,
+                    friendly_name=(
+                        dedent(self.friendly_name) if self.friendly_name else self.friendly_name
+                    ),
+                    description=dedent(self.description) if self.description else self.description,
+                    bigger_is_better=self.bigger_is_better,
+                    analysis_bases=self.analysis_bases
+                    or [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES],
+                    type=self.type or "scalar",
+                    category=self.category,
+                    depends_on=upstream_metrics,
+                    owner=[self.owner] if isinstance(self.owner, str) else self.owner,
+                    deprecated=self.deprecated,
+                    level=self.level,
+                )
+            elif metric_definition:
+                metric_definition.analysis_bases = self.analysis_bases or [
+                    AnalysisBasis.ENROLLMENTS,
+                    AnalysisBasis.EXPOSURES,
+                ]
+                metric_definition.statistics = self.statistics
+                metric_summary = metric_definition.resolve(spec, conf, configs)
         else:
             select_expression = self.generate_select_expression(
                 spec.parameters.definitions,
@@ -188,14 +258,19 @@ class MetricDefinition:
                 name=self.name,
                 data_source=self.data_source.resolve(spec, conf, configs),
                 select_expression=select_expression,
-                friendly_name=dedent(self.friendly_name)
-                if self.friendly_name
-                else self.friendly_name,
+                friendly_name=(
+                    dedent(self.friendly_name) if self.friendly_name else self.friendly_name
+                ),
                 description=dedent(self.description) if self.description else self.description,
                 bigger_is_better=self.bigger_is_better,
-                analysis_bases=self.analysis_bases or [AnalysisBasis.ENROLLMENTS],
+                analysis_bases=self.analysis_bases
+                or [AnalysisBasis.ENROLLMENTS, AnalysisBasis.EXPOSURES],
                 type=self.type or "scalar",
                 category=self.category,
+                depends_on=upstream_metrics,
+                owner=[self.owner] if isinstance(self.owner, str) else self.owner,
+                deprecated=self.deprecated,
+                level=self.level,
             )
 
         metrics_with_treatments = []
@@ -267,6 +342,8 @@ class MetricsSpec:
     weekly: List[MetricReference] = attr.Factory(list)
     days28: List[MetricReference] = attr.Factory(list)
     overall: List[MetricReference] = attr.Factory(list)
+    preenrollment_weekly: List[MetricReference] = attr.Factory(list)
+    preenrollment_days28: List[MetricReference] = attr.Factory(list)
     definitions: Dict[str, MetricDefinition] = attr.Factory(dict)
 
     @classmethod
@@ -325,18 +402,24 @@ class MetricsSpec:
 
         The `other` MetricsSpec overwrites existing metrics.
         """
-        self.daily += other.daily
-        self.weekly += other.weekly
-        self.days28 += other.days28
-        self.overall += other.overall
+        self.daily = other.daily + self.daily
+        self.weekly = other.weekly + self.weekly
+        self.days28 = other.days28 + self.days28
+        self.overall = other.overall + self.overall
+        self.preenrollment_weekly = other.preenrollment_weekly + self.preenrollment_weekly
+        self.preenrollment_days28 = other.preenrollment_days28 + self.preenrollment_days28
 
-        seen = []
+        seen = set()
         for key, _ in self.definitions.items():
-            if key in other.definitions:
-                self.definitions[key].merge(other.definitions[key])
-            seen.append(key)
+            for other_key in other.definitions:
+                # support wildcard characters in `other`
+                other_key_regex = re.compile(fnmatch.translate(other_key))
+                if other_key_regex.fullmatch(key):
+                    self.definitions[key].merge(other.definitions[other_key])
+                    seen.add(other_key)
+            seen.add(key)
         for key, definition in other.definitions.items():
-            if key not in seen:
+            if key not in seen and is_valid_slug(key):
                 self.definitions[key] = definition
 
 

@@ -125,12 +125,13 @@ class AnalysisSpec:
 
         # metrics defined in outcome snippets are only computed for
         # weekly and overall analysis windows
-        self.metrics.merge(
-            MetricsSpec(
-                daily=[], weekly=metrics, days28=[], overall=metrics, definitions=other.metrics
-            )
+        outcome_spec = MetricsSpec(
+            daily=[], weekly=metrics, days28=[], overall=metrics, definitions=other.metrics
         )
-        self.data_sources.merge(other.data_sources)
+        outcome_spec.merge(self.metrics)
+        other.data_sources.merge(self.data_sources)
+        self.data_sources = other.data_sources
+        self.metrics = outcome_spec
 
         if other.parameters:
             self.merge_parameters(other.parameters)
@@ -161,9 +162,11 @@ class AnalysisSpec:
                 "friendly_name": getattr(param_1, "friendly_name", None)
                 or getattr(param_2, "friendly_name"),
                 "description": getattr(param_1, "description", None) or param_2.description,
-                "value": {branch: branch_value for branch, branch_value in final_value.items()}
-                if isinstance(final_value, dict)
-                else final_value,
+                "value": (
+                    {branch: branch_value for branch, branch_value in final_value.items()}
+                    if isinstance(final_value, dict)
+                    else final_value
+                ),
                 "default": getattr(param_1, "default", None)
                 or default_value
                 or (dict() if isinstance(final_value, dict) else None),

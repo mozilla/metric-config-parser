@@ -12,5 +12,5 @@ class TestParameterSpec:
         }
 
         actual = ParameterSpec.from_dict(test_spec)
-        assert type(actual) == ParameterSpec
-        assert type(actual.definitions["param_1"]) == ParameterDefinition
+        assert type(actual) is ParameterSpec
+        assert type(actual.definitions["param_1"]) is ParameterDefinition
