@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from .config import ConfigCollection
     from .analysis import AnalysisSpec
 
-from .errors import NoStartDateException
+from .errors import NoEndDateException, NoStartDateException
 from .exposure_signal import ExposureSignal, ExposureSignalDefinition
 from .segment import Segment, SegmentReference
 from .util import parse_date
@@ -185,6 +185,12 @@ class ExperimentConfiguration:
         if not self.start_date:
             raise NoStartDateException(self.normandy_slug)
         return self.start_date.strftime("%Y-%m-%d")
+
+    @property
+    def end_date_str(self) -> str:
+        if not self.end_date:
+            raise NoEndDateException(self.normandy_slug)
+        return self.end_date.strftime("%Y-%m-%d")
 
     @property
     def last_enrollment_date_str(self) -> str:
