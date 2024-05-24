@@ -1,4 +1,6 @@
 import copy
+import fnmatch
+import re
 from collections import defaultdict
 from enum import Enum
 from textwrap import dedent
@@ -21,7 +23,7 @@ from .data_source import DataSource, DataSourceReference
 from .parameter import ParameterDefinition
 from .pre_treatment import PreTreatmentReference
 from .statistic import Statistic
-from .util import converter
+from .util import converter, is_valid_slug
 
 
 class AnalysisPeriod(Enum):
@@ -29,16 +31,38 @@ class AnalysisPeriod(Enum):
     WEEK = "week"
     DAYS_28 = "days28"
     OVERALL = "overall"
+    PREENROLLMENT_WEEK = "preenrollment_week"
+    PREENROLLMENT_DAYS_28 = "preenrollment_days28"
 
     @property
     def mozanalysis_label(self) -> str:
-        d = {"day": "daily", "week": "weekly", "days28": "28_day", "overall": "overall"}
+        d = {
+            "day": "daily",
+            "week": "weekly",
+            "days28": "28_day",
+            "overall": "overall",
+            "preenrollment_week": "preenrollment_weekly",
+            "preenrollment_days28": "preenrollment_days28",
+        }
         return d[self.value]
 
     @property
     def table_suffix(self) -> str:
-        d = {"day": "daily", "week": "weekly", "days28": "days28", "overall": "overall"}
+        d = {
+            "day": "daily",
+            "week": "weekly",
+            "days28": "days28",
+            "overall": "overall",
+            "preenrollment_week": "preenrollment_weekly",
+            "preenrollment_days28": "preenrollment_days28",
+        }
         return d[self.value]
+
+
+class MetricLevel(Enum):
+    GOLD = "gold"
+    SILVER = "silver"
+    BRONZE = "bronze"
 
 
 @attr.s(auto_attribs=True)
@@ -69,6 +93,9 @@ class Metric:
     type: str = "scalar"
     category: Optional[str] = None
     depends_on: Optional[List[Summary]] = None
+    owner: Optional[List[str]] = None
+    deprecated: bool = False
+    level: Optional[MetricLevel] = None
 
 
 @attr.s(auto_attribs=True)
@@ -94,6 +121,8 @@ class MetricReference:
 # These are bare strings in the configuration file.
 converter.register_structure_hook(MetricReference, lambda obj, _type: MetricReference(name=obj))
 
+converter.register_structure_hook(Union[str, List[str], None], lambda obj, _type: obj)
+
 
 @attr.s(auto_attribs=True)
 class MetricDefinition:
@@ -115,6 +144,9 @@ class MetricDefinition:
     type: Optional[str] = None
     category: Optional[str] = None
     depends_on: Optional[List[MetricReference]] = None
+    owner: Optional[Union[str, List[str]]] = None
+    deprecated: bool = False
+    level: Optional[MetricLevel] = None
 
     @staticmethod
     def generate_select_expression(
@@ -194,9 +226,9 @@ class MetricDefinition:
                     name=self.name,
                     data_source=None,
                     select_expression=None,
-                    friendly_name=dedent(self.friendly_name)
-                    if self.friendly_name
-                    else self.friendly_name,
+                    friendly_name=(
+                        dedent(self.friendly_name) if self.friendly_name else self.friendly_name
+                    ),
                     description=dedent(self.description) if self.description else self.description,
                     bigger_is_better=self.bigger_is_better,
                     analysis_bases=self.analysis_bases
@@ -204,6 +236,9 @@ class MetricDefinition:
                     type=self.type or "scalar",
                     category=self.category,
                     depends_on=upstream_metrics,
+                    owner=[self.owner] if isinstance(self.owner, str) else self.owner,
+                    deprecated=self.deprecated,
+                    level=self.level,
                 )
             elif metric_definition:
                 metric_definition.analysis_bases = self.analysis_bases or [
@@ -223,9 +258,9 @@ class MetricDefinition:
                 name=self.name,
                 data_source=self.data_source.resolve(spec, conf, configs),
                 select_expression=select_expression,
-                friendly_name=dedent(self.friendly_name)
-                if self.friendly_name
-                else self.friendly_name,
+                friendly_name=(
+                    dedent(self.friendly_name) if self.friendly_name else self.friendly_name
+                ),
                 description=dedent(self.description) if self.description else self.description,
                 bigger_is_better=self.bigger_is_better,
                 analysis_bases=self.analysis_bases
@@ -233,6 +268,9 @@ class MetricDefinition:
                 type=self.type or "scalar",
                 category=self.category,
                 depends_on=upstream_metrics,
+                owner=[self.owner] if isinstance(self.owner, str) else self.owner,
+                deprecated=self.deprecated,
+                level=self.level,
             )
 
         metrics_with_treatments = []
@@ -304,6 +342,8 @@ class MetricsSpec:
     weekly: List[MetricReference] = attr.Factory(list)
     days28: List[MetricReference] = attr.Factory(list)
     overall: List[MetricReference] = attr.Factory(list)
+    preenrollment_weekly: List[MetricReference] = attr.Factory(list)
+    preenrollment_days28: List[MetricReference] = attr.Factory(list)
     definitions: Dict[str, MetricDefinition] = attr.Factory(dict)
 
     @classmethod
@@ -366,14 +406,20 @@ class MetricsSpec:
         self.weekly = other.weekly + self.weekly
         self.days28 = other.days28 + self.days28
         self.overall = other.overall + self.overall
+        self.preenrollment_weekly = other.preenrollment_weekly + self.preenrollment_weekly
+        self.preenrollment_days28 = other.preenrollment_days28 + self.preenrollment_days28
 
-        seen = []
+        seen = set()
         for key, _ in self.definitions.items():
-            if key in other.definitions:
-                self.definitions[key].merge(other.definitions[key])
-            seen.append(key)
+            for other_key in other.definitions:
+                # support wildcard characters in `other`
+                other_key_regex = re.compile(fnmatch.translate(other_key))
+                if other_key_regex.fullmatch(key):
+                    self.definitions[key].merge(other.definitions[other_key])
+                    seen.add(other_key)
+            seen.add(key)
         for key, definition in other.definitions.items():
-            if key not in seen:
+            if key not in seen and is_valid_slug(key):
                 self.definitions[key] = definition
 
 

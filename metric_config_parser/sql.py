@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 FILE_PATH = Path(os.path.dirname(__file__))
 METRICS_QUERY = FILE_PATH / "templates" / "metrics_query.sql"
 DATA_SOURCE_QUERY = FILE_PATH / "templates" / "data_source_query.sql"
+DATA_SOURCE_MACROS = FILE_PATH / "templates" / "data_source_macros.j2"
 
 
 def generate_metrics_sql(
@@ -70,7 +71,12 @@ def generate_metrics_sql(
     if isinstance(group_by, list):
         group_by = {g: g for g in group_by}
 
+    macros_template = DATA_SOURCE_MACROS.read_text()
     template = METRICS_QUERY.read_text()
+
+    # using `from_string()` in Jinja doens't support include statements, so
+    # substituting them here manually
+    template = template.replace("{% include 'data_source_macros.j2' %}", macros_template)
     return (
         config_collection.get_env()
         .from_string(template)
@@ -81,6 +87,13 @@ def generate_metrics_sql(
                 "group_by": group_by,
                 "group_by_client_id": group_by_client_id,
                 "group_by_submission_date": group_by_submission_date,
+                "data_sources": {
+                    slug: data_source
+                    for definition in config_collection.definitions
+                    for slug, data_source in definition.spec.data_sources.definitions.items()
+                    if platform == definition.platform
+                },
+                "select_fields": True,
             }
         )
     )
@@ -91,9 +104,15 @@ def generate_data_source_sql(
     data_source: str,
     platform: str,
     where: Optional[str] = None,
+    select_fields: bool = True,
 ) -> str:
     """Generates a SQL query for the specified data source."""
     template = DATA_SOURCE_QUERY.read_text()
+    macros_template = DATA_SOURCE_MACROS.read_text()
+
+    # using `from_string()` in Jinja doens't support include statements, so
+    # substituting them here manually
+    template = template.replace("{% include 'data_source_macros.j2' %}", macros_template)
     data_source_definition = config_collection.get_data_source_definition(data_source, platform)
 
     if data_source_definition is None:
@@ -110,7 +129,14 @@ def generate_data_source_sql(
         .render(
             **{
                 "data_source": data_source_definition,
+                "data_sources": {
+                    slug: data_source
+                    for definition in config_collection.definitions
+                    for slug, data_source in definition.spec.data_sources.definitions.items()
+                    if platform == definition.platform
+                },
                 "where": where,
+                "select_fields": select_fields,
             }
         )
     )

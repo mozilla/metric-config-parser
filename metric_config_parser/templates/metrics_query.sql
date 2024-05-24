@@ -1,3 +1,5 @@
+{% include 'data_source_macros.j2' %}
+
 (
 {% for data_source_slug, data_source_info in metrics_per_data_source.items() -%}
 {{ "WITH" if loop.first else "" }} {{ data_source_slug }} AS (
@@ -14,13 +16,9 @@
         {% for metric in data_source_info["metrics"] -%}
         {{ metric.select_expression }} AS {{ metric.name }},
         {% endfor %}
-    FROM
-        {{ data_source_info["data_source"].from_expression }}
-    {% if where -%}
-    WHERE
-        {{ where }}
-    {% endif -%}
-    GROUP BY    
+    FROM {{ data_source_query(data_source_info["data_source"]) }}
+    {% if group_by != {} or group_by_submission_date or group_by_client_id -%}
+    GROUP BY
         {% for dimension, dimension_sql in group_by.items() -%}
         {{ dimension }}{{ "," if not loop.last or group_by_submission_date or group_by_client_id else "" }}
         {% endfor -%}
@@ -29,7 +27,8 @@
         {% endif -%}
         {% if group_by_submission_date -%}
         submission_date
-        {% endif %}
+        {% endif -%}
+    {% endif -%}
 ){{ "," if not loop.last else "" }}
 {% endfor -%}
 

@@ -55,6 +55,10 @@ description = """
 
 [metrics.view_about_logins.statistics.bootstrap_mean]
 
+[metrics.joined_metric]
+data_source = "joined_baseline"
+select_expression = "SELECT 1"
+
 
 [data_sources]
 
@@ -82,6 +86,26 @@ from_expression = "mozdata.telemetry.events"
 experiments_column_type = "native"
 friendly_name = "Events"
 description = "Events Ping"
+
+[data_sources.joined_baseline]
+from_expression = "mozdata.telemetry.baseline"
+experiments_column_type = "native"
+friendly_name = "Baseline with events"
+description = "Baseline with events"
+client_id_column = "client_id"
+submission_date_column = "submission_date"
+
+[data_sources.joined_baseline.joins.events]
+on_expression = "joined_baseline.client_id = events.client_id"
+relationship = "many_to_many"
+
+[data_sources.multiple_joined_baseline]
+from_expression = "mozdata.telemetry.baseline"
+experiments_column_type = "native"
+friendly_name = "Baseline with events"
+description = "Baseline with events"
+
+[data_sources.multiple_joined_baseline.joins.joined_baseline]
 
 [segments]
 

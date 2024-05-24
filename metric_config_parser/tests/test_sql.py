@@ -92,3 +92,38 @@ def test_data_source_not_found(config_collection):
         config_collection.get_data_source_sql(
             data_source="non-existing", platform="firefox_desktop"
         )
+
+
+def test_data_source_with_join(config_collection):
+    assert (
+        config_collection.get_data_source_sql(
+            data_source="joined_baseline",
+            platform="firefox_desktop",
+            where="submission_date = '2023-01-01'",
+        )
+        == (TEST_DATA / "test_generate_data_source_with_join.expected.sql").read_text()
+    )
+
+
+def test_data_source_with_multiple_join(config_collection):
+    assert (
+        config_collection.get_data_source_sql(
+            data_source="multiple_joined_baseline",
+            platform="firefox_desktop",
+            where="submission_date = '2023-01-01'",
+        )
+        == (TEST_DATA / "test_generate_data_source_with_multi_join.expected.sql").read_text()
+    )
+
+
+def test_metric_with_joined_data_source(config_collection):
+    assert (
+        config_collection.get_metrics_sql(
+            metrics=["joined_metric"],
+            platform="firefox_desktop",
+            where="submission_date = '2023-01-01' AND normalized_channel = 'release'",
+            group_by_client_id=True,
+            group_by_submission_date=False,
+        )
+        == (TEST_DATA / "test_generate_query_with_joined_data_sources.expected.sql").read_text()
+    )

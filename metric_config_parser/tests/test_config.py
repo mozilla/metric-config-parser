@@ -16,7 +16,9 @@ from metric_config_parser.config import (
     DefinitionConfig,
     Outcome,
 )
+from metric_config_parser.data_source import DataSourceJoinRelationship
 from metric_config_parser.errors import DefinitionNotFound
+from metric_config_parser.metric import MetricLevel
 from metric_config_parser.outcome import OutcomeSpec
 
 TEST_DIR = Path(__file__).parent
@@ -431,3 +433,332 @@ class TestConfigIntegration:
 
         configs = configs.as_of(pytz.UTC.localize(datetime.datetime(2023, 5, 21)))
         assert configs.outcomes is not None
+
+    def test_metric_level(self):
+        config_str = dedent(
+            """
+            [metrics.active_hours]
+            select_expression = "1"
+            data_source = "baseline"
+            owner = "me@example.com"
+            category = "test"
+            level = "silver"
+
+            [metrics.other_metric]
+            select_expression = "1"
+            data_source = "baseline"
+            owner = ["me@example.com", "you@example.com"]
+            category = "test"
+            level = "gold"
+
+            [data_sources.baseline]
+            from_expression = "mozdata.search.baseline"
+            experiments_column_type = "simple"
+            """
+        )
+
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection = ConfigCollection(
+            configs=[], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        metric_definition = config_collection.get_metric_definition(
+            "active_hours", "firefox_desktop"
+        )
+
+        assert metric_definition.level == MetricLevel.SILVER
+        assert metric_definition.owner == "me@example.com"
+        assert metric_definition.category == "test"
+
+        metric_definition = config_collection.get_metric_definition(
+            "other_metric", "firefox_desktop"
+        )
+
+        assert metric_definition.level == MetricLevel.GOLD
+        assert metric_definition.owner == ["me@example.com", "you@example.com"]
+        assert metric_definition.category == "test"
+
+    def test_invalid_metric_level(self):
+        config_str = dedent(
+            """
+            [metrics.active_hours]
+            select_expression = "1"
+            data_source = "baseline"
+            level = "invalid"
+
+            [data_sources.baseline]
+            from_expression = "mozdata.search.baseline"
+            experiments_column_type = "simple"
+            """
+        )
+
+        with pytest.raises(Exception):
+            DefinitionConfig(
+                slug="firefox_desktop",
+                platform="firefox_desktop",
+                spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+                last_modified=datetime.datetime.now(),
+            )
+
+    def test_data_source_joins(self):
+        config_str = dedent(
+            """
+            [data_sources.events]
+            from_expression = "mozdata.telemetry.events"
+            experiments_column_type = "simple"
+
+            [data_sources.metrics]
+            from_expression = "mozdata.telemetry.metrics"
+            experiments_column_type = "simple"
+
+            [data_sources.baseline]
+            from_expression = "mozdata.telemetry.baseline"
+            experiments_column_type = "simple"
+
+            [data_sources.baseline.joins.metrics]
+            on_expression = "metrics.client_id = baseline.client_id"
+            relationship = "many_to_one"
+
+            [data_sources.baseline.joins.events]
+            """
+        )
+
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection = ConfigCollection(
+            configs=[], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        data_source = config_collection.get_data_source_definition(
+            "baseline", "firefox_desktop"
+        ).resolve(definition.spec, None, config_collection)
+
+        assert len(data_source.joins) == 2
+        assert data_source.joins[0].data_source.name == "metrics"
+        assert data_source.joins[0].on_expression == "metrics.client_id = baseline.client_id"
+        assert data_source.joins[0].relationship == DataSourceJoinRelationship.MANY_TO_ONE
+
+        assert data_source.joins[1].data_source.name == "events"
+
+    def test_data_source_joins_invalid(self):
+        config_str = dedent(
+            """
+            [data_sources.baseline]
+            from_expression = "mozdata.telemetry.baseline"
+            experiments_column_type = "simple"
+
+            [data_sources.baseline.joins.non_existing]
+            relationship = "many_to_one"
+            """
+        )
+
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection = ConfigCollection(
+            configs=[], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        with pytest.raises(Exception):
+            config_collection.get_data_source_definition("baseline", "firefox_desktop").resolve(
+                definition.spec, None, config_collection
+            )
+
+    def test_data_source_joins_circular_dependency(self):
+        config_str = dedent(
+            """
+            [data_sources.baseline]
+            from_expression = "mozdata.telemetry.baseline"
+            experiments_column_type = "simple"
+
+            [data_sources.metrics]
+            from_expression = "mozdata.telemetry.metrics"
+            experiments_column_type = "simple"
+
+            [data_sources.baseline.joins.metrics]
+
+            [data_sources.metrics.joins.baseline]
+            """
+        )
+
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection = ConfigCollection(
+            configs=[], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        with pytest.raises(Exception):
+            config_collection.get_data_source_definition("baseline", "firefox_desktop").resolve(
+                definition.spec, None, config_collection
+            )
+
+    def test_invalid_wildcard_in_data_source(self):
+        # needs to be [data_sources.'baseline_*']
+        config_str = dedent(
+            """
+            [data_sources.baseline_*]
+            from_expression = "mozdata.search.baseline"
+            experiments_column_type = "simple"
+            """
+        )
+
+        with pytest.raises(ValueError):
+            DefinitionConfig(
+                slug="firefox_desktop",
+                platform="firefox_desktop",
+                spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+                last_modified=datetime.datetime.now(),
+            )
+
+    def test_merge_with_wildcards(self):
+        config_str = dedent(
+            """
+            [metrics.test_metric]
+            select_expression = 1
+            category = "test"
+
+            [data_sources.baseline]
+            from_expression = "mozdata.search.baseline"
+            experiments_column_type = "simple"
+            """
+        )
+
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection_1 = ConfigCollection(
+            configs=[], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        config_str = dedent(
+            """
+            [data_sources.'*']
+            experiments_column_type = "none"
+
+            [metrics.'test_*']
+            data_source = "baseline"
+            category = "test_overwrite_first"
+
+            [metrics.'test_*'.statistics.bootstrap_mean]
+
+            [metrics.'test_me*']
+            category = "test_overwrite_second"
+            """
+        )
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection_2 = ConfigCollection(
+            configs=[], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        config_collection_1.get_metric_definition(
+            "test_metric", "firefox_desktop"
+        ).data_source is None
+        assert (
+            config_collection_1.get_data_source_definition(
+                "baseline", "firefox_desktop"
+            ).experiments_column_type
+            == "simple"
+        )
+
+        config_collection_1.merge(config_collection_2)
+        assert (
+            config_collection_1.get_data_source_definition("baseline", "firefox_desktop").name
+            == "baseline"
+        )
+        assert (
+            config_collection_1.get_data_source_definition(
+                "baseline", "firefox_desktop"
+            ).experiments_column_type
+            == "none"
+        )
+        assert config_collection_1.get_data_source_definition("*", "firefox_desktop") is None
+        assert (
+            config_collection_1.get_metric_definition(
+                "test_metric", "firefox_desktop"
+            ).data_source.name
+            == "baseline"
+        )
+        assert (
+            "bootstrap_mean"
+            in config_collection_1.get_metric_definition(
+                "test_metric", "firefox_desktop"
+            ).statistics
+        )
+        assert (
+            config_collection_1.get_metric_definition("test_metric", "firefox_desktop").category
+            == "test_overwrite_second"
+        )
+
+    def test_merge_with_wildcards_invalid(self):
+        config_str = dedent(
+            """
+            [data_sources.baseline]
+            from_expression = "mozdata.search.baseline"
+            experiments_column_type = "simple"
+            """
+        )
+
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection_1 = ConfigCollection(
+            configs=[], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        config_str = dedent(
+            """
+            [data_sources.'invalid_*']
+            experiments_column_type = "none"
+            """
+        )
+        definition = DefinitionConfig(
+            slug="firefox_desktop",
+            platform="firefox_desktop",
+            spec=AnalysisSpec.from_dict(toml.loads(config_str)),
+            last_modified=datetime.datetime.now(),
+        )
+        config_collection_2 = ConfigCollection(
+            configs=[], outcomes=[], defaults=[], definitions=[definition]
+        )
+
+        config_collection_1.merge(config_collection_2)
+        assert (
+            config_collection_1.get_data_source_definition("baseline", "firefox_desktop").name
+            == "baseline"
+        )
+        assert (
+            config_collection_1.get_data_source_definition(
+                "baseline", "firefox_desktop"
+            ).experiments_column_type
+            == "simple"
+        )
+        assert (
+            config_collection_1.get_data_source_definition("invalid_*", "firefox_desktop") is None
+        )
